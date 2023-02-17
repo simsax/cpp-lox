@@ -106,6 +106,9 @@ void Scanner::ScanToken() {
 			while (Peek() != '\n' && !IsAtEnd())
 				Advance();
 		}
+		else if (Match('*')) {
+			ConsumeBlockComment();
+		}
 		else {
 			AddToken(TokenType::SLASH);
 		}
@@ -218,4 +221,22 @@ void Scanner::ConsumeIdentifier() {
 		AddToken(item->second);
 	else
 		AddToken(TokenType::IDENTIFIER);
+}
+
+void Scanner::ConsumeBlockComment() {
+	while (!IsAtEnd() && (Peek() != '*' || PeekNext() != '/')) {
+		if (Peek() == '\n')
+			m_Line++;
+		Advance();
+	}
+
+	if (IsAtEnd()) {
+		Lox::Error(m_Line, "Unterminated block comment.");
+		return;
+	}
+
+	// the '*'
+	Advance();
+	// the '/'
+	Advance();
 }

@@ -20,6 +20,7 @@ private:
 	void ConsumeString();
 	void ConsumeDigit();
 	void ConsumeIdentifier();
+	void ConsumeBlockComment();
 
 	std::vector<Token> m_Tokens;
 	std::string m_SourceCode;
