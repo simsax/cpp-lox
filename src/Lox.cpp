@@ -3,6 +3,7 @@
 #include "Scanner.h"
 #include "Token.h"
 
+#define EX_USAGE 64
 #define EX_DATAERR 65
 
 namespace Lox {
