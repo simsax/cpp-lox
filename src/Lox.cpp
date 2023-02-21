@@ -24,9 +24,9 @@ namespace Lox {
 		Scanner scanner(sourceCode);
 		std::vector<Token> tokens = scanner.ScanTokens();
 
-		for (const auto& token : tokens) {
-			std::cout << token << "\n";
-		}
+		//for (const auto& token : tokens) {
+		//	std::cout << token << "\n";
+		//}
 	}
 
 	void RunFile(const char* fileName) {

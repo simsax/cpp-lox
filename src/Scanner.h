@@ -15,11 +15,12 @@ private:
 	char Peek();
 	char PeekNext();
 	void AddToken(TokenType type);
-	void AddToken(TokenType type, const std::variant<double, std::string>& literal);
+	void AddToken(TokenType type, const std::variant<std::monostate, double, std::string>& literal);
 	bool Match(char expected);
 	void ConsumeString();
 	void ConsumeDigit();
 	void ConsumeIdentifier();
+	void ConsumeBlockComment();
 
 	std::vector<Token> m_Tokens;
 	std::string m_SourceCode;
