@@ -18,12 +18,13 @@ int main() {
 	//	Lox::RunPrompt();
 	//}
 	//return 0;
-	Expr<std::string>* expression = new Binary<std::string>(
-		new Unary<std::string>(
+
+	Expr* expression = new Binary(
+		new Unary(
 			Token(TokenType::MINUS, "-", std::monostate(), 1),
-			new Literal<std::string>(123.0)),
+			new Literal(123)),
 		Token(TokenType::STAR, "*", std::monostate(), 1),
-		new Grouping<std::string>(new Literal<std::string>(45.67)));
+		new Grouping(new Literal(45.67)));
 
 	AstPrinter astPrinter;
 	std::cout << astPrinter.Print(expression);

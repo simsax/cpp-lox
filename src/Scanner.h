@@ -15,7 +15,7 @@ private:
 	char Peek();
 	char PeekNext();
 	void AddToken(TokenType type);
-	void AddToken(TokenType type, const std::variant<std::monostate, double, std::string>& literal);
+	void AddToken(TokenType type, const std::any& literal);
 	bool Match(char expected);
 	void ConsumeString();
 	void ConsumeDigit();

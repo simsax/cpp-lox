@@ -2,18 +2,18 @@
 #include "Expr.h"
 #include <string>
 
-class AstPrinter : public Visitor<std::string> {
+class AstPrinter : public Visitor {
 public:
 	AstPrinter();
 
-	std::string Print(Expr<std::string>* expr);
-	std::string VisitBinaryExpr(Binary<std::string>* expr) override;
-	std::string VisitGroupingExpr(Grouping<std::string>* expr) override;
-	std::string VisitLiteralExpr(Literal<std::string>* expr) override;
-	std::string VisitUnaryExpr(Unary<std::string>* expr) override;
+	std::string Print(Expr* expr);
+	std::any VisitBinaryExpr(Binary* expr) override;
+	std::any VisitGroupingExpr(Grouping* expr) override;
+	std::any VisitLiteralExpr(Literal* expr) override;
+	std::any VisitUnaryExpr(Unary* expr) override;
 
 private:
-	template<typename... Args>
+	template<typename ...Args>
 	std::string Parenthesize(const std::string& name, Args... exprs);
 };
 
@@ -22,9 +22,21 @@ inline std::string AstPrinter::Parenthesize(const std::string& name, Args ...exp
 {
 	std::string tree = "";
 	tree += "(" + name;
-	for (Expr<std::string>* expr : { exprs... }) {
+	for (Expr* child : { exprs... }) {
 		tree += " ";
-		tree += expr->Accept(this);
+		std::any result = child->Accept(this);
+		if (result.type() == typeid(int)) {
+			int value = std::any_cast<int>(result);
+			tree += std::to_string(value);
+		}
+		else if (result.type() == typeid(double)) {
+			double value = std::any_cast<double>(result);
+			tree += std::to_string(value);
+		}
+		else {
+			std::string value = std::any_cast<std::string>(result);
+			tree += value;
+		}
 	}
 	tree += ")";
 	return tree;
