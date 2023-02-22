@@ -1,7 +1,7 @@
 #pragma once
 #include <cstdint>
 #include <iostream>
-#include <variant>
+#include <any>
 
 enum class TokenType : uint8_t {
 	// Single-character tokens
@@ -25,20 +25,12 @@ enum class TokenType : uint8_t {
 };
 
 struct Token {
-	inline Token(TokenType type, std::string lexeme, std::variant<double, std::string> literal, int line) :
+	inline Token(TokenType type, std::string lexeme, std::any literal, int line) :
 		type(type), lexeme(std::move(lexeme)), literal(std::move(literal)), line(line)
 	{ }
 
-	inline friend std::ostream& operator<<(std::ostream& os, const Token& token) {
-		std::visit([&os, &token](const auto& literalVal) {
-			os << "Type: " << static_cast<int>(token.type) << " Lexeme: " <<
-			token.lexeme << " Value: " << literalVal; },
-			token.literal);
-		return os;
-	}
-
 	TokenType type;
 	std::string lexeme;
-	std::variant<double, std::string> literal;
+	std::any literal;
 	int line;
 };

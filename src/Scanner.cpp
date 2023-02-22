@@ -159,10 +159,10 @@ char Scanner::PeekNext() {
 }
 
 void Scanner::AddToken(TokenType type) {
-	AddToken(type, "");
+	AddToken(type, std::any{});
 }
 
-void Scanner::AddToken(TokenType type, const std::variant<double, std::string>& literal) {
+void Scanner::AddToken(TokenType type, const std::any& literal) {
 	std::string text = m_SourceCode.substr(m_Start, m_Current - m_Start);
 	m_Tokens.emplace_back(type, text, literal, m_Line);
 }
