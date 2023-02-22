@@ -19,12 +19,20 @@ int main() {
 	//}
 	//return 0;
 
+	// leaking memory
 	Expr* expression = new Binary(
-		new Unary(
-			Token(TokenType::MINUS, "-", std::monostate(), 1),
-			new Literal(123)),
-		Token(TokenType::STAR, "*", std::monostate(), 1),
-		new Grouping(new Literal(45.67)));
+		new Binary(
+			new Literal(1),
+			Token(TokenType::PLUS, "+", std::any{}, 1),
+			new Literal(2)
+		),
+		Token(TokenType::STAR, "*", std::any{}, 1),
+		new Binary(
+			new Literal(4),
+			Token(TokenType::MINUS, "-", std::any{}, 1),
+			new Literal(3)
+		)
+	);
 
 	AstPrinter astPrinter;
 	std::cout << astPrinter.Print(expression);

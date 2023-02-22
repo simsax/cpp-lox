@@ -29,14 +29,6 @@ struct Token {
 		type(type), lexeme(std::move(lexeme)), literal(std::move(literal)), line(line)
 	{ }
 
-	//inline friend std::ostream& operator<<(std::ostream& os, const Token& token) {
-	//	std::visit([&os, &token](const auto& literalVal) {
-	//		os << "Type: " << static_cast<int>(token.type) << " Lexeme: " <<
-	//		token.lexeme << " Value: " << literalVal; },
-	//		token.literal);
-	//	return os;
-	//}
-
 	TokenType type;
 	std::string lexeme;
 	std::any literal;
