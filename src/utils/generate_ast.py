@@ -3,7 +3,7 @@ import re
 def define_type(base_name: str, class_name: str):
     return fr"""
 inline std::any {class_name}::Accept(Visitor* visitor) {{
-	return visitor->Visit{class_name}{base_name}(this);          
+	return visitor->Visit{class_name}(this);          
 }}
 """
 
@@ -41,7 +41,7 @@ public:
 """
     for type_ in types:
         class_name = type_.split(";")[0].strip()
-        code += f"\tvirtual std::any Visit{class_name}{base_name}({class_name}* {base_name.lower()}) = 0;\n"
+        code += f"\tvirtual std::any Visit{class_name}({class_name}* {base_name.lower()}) = 0;\n"
     code += "};\n\ninline Visitor::~Visitor() = default;\n"
     return code
         
@@ -81,10 +81,10 @@ inline Expr::~Expr() = default;
 if __name__ == "__main__":
     # class_name ; fields
     types = [
-        "Binary   ; Expr* left, const Token& opr, Expr* right",
-        "Grouping ; Expr* expression",
-        "Literal  ; const std::any& value",
-        "Unary    ; const Token& opr, Expr* right"
+        "BinaryExpr   ; Expr* left, const Token& opr, Expr* right",
+        "GroupingExpr ; Expr* expression",
+        "LiteralExpr  ; const std::any& value",
+        "UnaryExpr    ; const Token& opr, Expr* right"
     ]
 
     define_ast("Expr", types)

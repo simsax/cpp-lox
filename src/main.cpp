@@ -20,17 +20,17 @@ int main() {
 	//return 0;
 
 	// leaking memory
-	Expr* expression = new Binary(
-		new Binary(
-			new Literal(1),
+	Expr* expression = new BinaryExpr(
+		new BinaryExpr(
+			new LiteralExpr(1),
 			Token(TokenType::PLUS, "+", std::any{}, 1),
-			new Literal(2)
+			new LiteralExpr(2)
 		),
 		Token(TokenType::STAR, "*", std::any{}, 1),
-		new Binary(
-			new Literal(4),
+		new BinaryExpr(
+			new LiteralExpr(4),
 			Token(TokenType::MINUS, "-", std::any{}, 1),
-			new Literal(3)
+			new LiteralExpr(3)
 		)
 	);
 

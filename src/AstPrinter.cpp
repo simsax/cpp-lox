@@ -20,17 +20,17 @@ std::string AstPrinter::Print(Expr* expr) {
 	}
 }
 
-std::any AstPrinter::VisitBinaryExpr(Binary* expr)
+std::any AstPrinter::VisitBinaryExpr(BinaryExpr* expr)
 {
 	return Parenthesize(expr->m_Opr.lexeme, expr->m_Left, expr->m_Right);
 }
 
-std::any AstPrinter::VisitGroupingExpr(Grouping* expr)
+std::any AstPrinter::VisitGroupingExpr(GroupingExpr* expr)
 {
 	return Parenthesize("group", expr->m_Expression);
 }
 
-std::any AstPrinter::VisitLiteralExpr(Literal* expr)
+std::any AstPrinter::VisitLiteralExpr(LiteralExpr* expr)
 {
 	if (!expr->m_Value.has_value())
 		return "nil";
@@ -38,7 +38,7 @@ std::any AstPrinter::VisitLiteralExpr(Literal* expr)
 		return expr->m_Value;
 }
 
-std::any AstPrinter::VisitUnaryExpr(Unary* expr)
+std::any AstPrinter::VisitUnaryExpr(UnaryExpr* expr)
 {
 	return Parenthesize(expr->m_Opr.lexeme, expr->m_Right);
 }

@@ -12,8 +12,8 @@ struct Expr {
 
 inline Expr::~Expr() = default;
 
-struct Binary : public Expr {
-    Binary(Expr* left, const Token& opr, Expr* right) :
+struct BinaryExpr : public Expr {
+    BinaryExpr(Expr* left, const Token& opr, Expr* right) :
 	m_Left(left),
 	m_Opr(opr),
 	m_Right(right)
@@ -26,8 +26,8 @@ struct Binary : public Expr {
 	Expr* m_Right;
 };
 
-struct Grouping : public Expr {
-    Grouping(Expr* expression) :
+struct GroupingExpr : public Expr {
+    GroupingExpr(Expr* expression) :
 	m_Expression(expression)
 	{ }
 
@@ -36,8 +36,8 @@ struct Grouping : public Expr {
 	Expr* m_Expression;
 };
 
-struct Literal : public Expr {
-    Literal(const std::any& value) :
+struct LiteralExpr : public Expr {
+    LiteralExpr(const std::any& value) :
 	m_Value(value)
 	{ }
 
@@ -46,8 +46,8 @@ struct Literal : public Expr {
 	std::any m_Value;
 };
 
-struct Unary : public Expr {
-    Unary(const Token& opr, Expr* right) :
+struct UnaryExpr : public Expr {
+    UnaryExpr(const Token& opr, Expr* right) :
 	m_Opr(opr),
 	m_Right(right)
 	{ }
@@ -61,26 +61,26 @@ struct Unary : public Expr {
 class Visitor {
 public:
     virtual ~Visitor() = 0;
-	virtual std::any VisitBinaryExpr(Binary* expr) = 0;
-	virtual std::any VisitGroupingExpr(Grouping* expr) = 0;
-	virtual std::any VisitLiteralExpr(Literal* expr) = 0;
-	virtual std::any VisitUnaryExpr(Unary* expr) = 0;
+	virtual std::any VisitBinaryExpr(BinaryExpr* expr) = 0;
+	virtual std::any VisitGroupingExpr(GroupingExpr* expr) = 0;
+	virtual std::any VisitLiteralExpr(LiteralExpr* expr) = 0;
+	virtual std::any VisitUnaryExpr(UnaryExpr* expr) = 0;
 };
 
 inline Visitor::~Visitor() = default;
 
-inline std::any Binary::Accept(Visitor* visitor) {
+inline std::any BinaryExpr::Accept(Visitor* visitor) {
 	return visitor->VisitBinaryExpr(this);          
 }
 
-inline std::any Grouping::Accept(Visitor* visitor) {
+inline std::any GroupingExpr::Accept(Visitor* visitor) {
 	return visitor->VisitGroupingExpr(this);          
 }
 
-inline std::any Literal::Accept(Visitor* visitor) {
+inline std::any LiteralExpr::Accept(Visitor* visitor) {
 	return visitor->VisitLiteralExpr(this);          
 }
 
-inline std::any Unary::Accept(Visitor* visitor) {
+inline std::any UnaryExpr::Accept(Visitor* visitor) {
 	return visitor->VisitUnaryExpr(this);          
 }

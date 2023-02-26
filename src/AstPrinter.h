@@ -7,10 +7,10 @@ public:
 	AstPrinter();
 
 	std::string Print(Expr* expr);
-	std::any VisitBinaryExpr(Binary* expr) override;
-	std::any VisitGroupingExpr(Grouping* expr) override;
-	std::any VisitLiteralExpr(Literal* expr) override;
-	std::any VisitUnaryExpr(Unary* expr) override;
+	std::any VisitBinaryExpr(BinaryExpr* expr) override;
+	std::any VisitGroupingExpr(GroupingExpr* expr) override;
+	std::any VisitLiteralExpr(LiteralExpr* expr) override;
+	std::any VisitUnaryExpr(UnaryExpr* expr) override;
 
 private:
 	template<typename ...Args>
