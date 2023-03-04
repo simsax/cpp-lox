@@ -25,12 +25,12 @@ enum class TokenType : uint8_t {
 };
 
 struct Token {
-	inline Token(TokenType type, std::string lexeme, std::any literal, int line) :
+	inline Token(TokenType type, std::string lexeme, std::any literal, std::size_t line) :
 		type(type), lexeme(std::move(lexeme)), literal(std::move(literal)), line(line)
 	{ }
 
 	TokenType type;
 	std::string lexeme;
 	std::any literal;
-	int line;
+	std::size_t line;
 };

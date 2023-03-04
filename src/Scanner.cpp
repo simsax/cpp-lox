@@ -135,7 +135,7 @@ void Scanner::ScanToken() {
 	}
 }
 
-bool Scanner::IsAtEnd() {
+bool Scanner::IsAtEnd() const {
 	return m_Current >= m_SourceCode.size();
 }
 
@@ -143,13 +143,13 @@ char Scanner::Advance() {
 	return m_SourceCode[m_Current++];
 }
 
-char Scanner::Peek() {
+char Scanner::Peek() const {
 	if (IsAtEnd())
 		return '\0';
 	return m_SourceCode[m_Current];
 }
 
-char Scanner::PeekNext() {
+char Scanner::PeekNext() const {
 	if (m_Current + 1 >= m_SourceCode.size())
 		return '\0';
 	return m_SourceCode[m_Current + 1];

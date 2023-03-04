@@ -1,113 +1,163 @@
 #include "Parser.h"
+#include "Lox.h"
 
 Parser::Parser(const std::vector<Token>& tokens) :
 	m_Tokens(tokens), m_Current(0)
 {
 }
 
-Expr* Parser::Expression() {
+std::unique_ptr<Expr> Parser::Parse()
+{
+	try {
+		return Expression();
+	}
+	catch (const ParseException& ex) {
+		std::cerr << ex.what() << "\n";
+		return std::unique_ptr<Expr>{};
+	}
+}
+
+std::unique_ptr<Expr> Parser::Expression() {
 	return Equality();
 }
 
-
-// leaking like crazy: remember to fix this (or just use smart pointers)
-// or just use references to stack allocated objects
-Expr* Parser::Equality() {
-	Expr* expr = Comparison();
+std::unique_ptr<Expr> Parser::Equality() {
+	std::unique_ptr<Expr> expr = Comparison();
 
 	while (Match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)) {
-		Token& opr = PreviousToken();
-		Expr* right = Comparison();
-		expr = new BinaryExpr(expr, opr, right);
+		const Token& opr = PreviousToken();
+		std::unique_ptr<Expr> right = Comparison();
+		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-Expr* Parser::Comparison()
+std::unique_ptr<Expr> Parser::Comparison()
 {
-	Expr* expr = Term();
+	std::unique_ptr<Expr> expr = Term();
 
 	while (Match(TokenType::GREATER, TokenType::GREATER_EQUAL,
 		TokenType::LESS, TokenType::LESS_EQUAL)) {
-		Token& opr = PreviousToken();
-		Expr* right = Term();
-		expr = new BinaryExpr(expr, opr, right);
+		const Token& opr = PreviousToken();
+		std::unique_ptr<Expr> right = Term();
+		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-Expr* Parser::Term()
+std::unique_ptr<Expr> Parser::Term()
 {
-	Expr* expr = Factor();
+	std::unique_ptr<Expr> expr = Factor();
 
 	while (Match(TokenType::MINUS, TokenType::PLUS)) {
-		Token& opr = PreviousToken();
-		Expr* right = Factor();
-		expr = new BinaryExpr(expr, opr, right);
+		const Token& opr = PreviousToken();
+		std::unique_ptr<Expr> right = Factor();
+		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-Expr* Parser::Factor()
+std::unique_ptr<Expr> Parser::Factor()
 {
-	Expr* expr = Unary();
+	std::unique_ptr<Expr> expr = Unary();
 
 	while (Match(TokenType::STAR, TokenType::SLASH)) {
-		Token& opr = PreviousToken();
-		Expr* right = Unary();
-		expr = new BinaryExpr(expr, opr, right);
+		const Token& opr = PreviousToken();
+		std::unique_ptr<Expr> right = Unary();
+		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-Expr* Parser::Unary()
+std::unique_ptr<Expr> Parser::Unary()
 {
 	while (Match(TokenType::BANG, TokenType::MINUS)) {
-		Token& opr = PreviousToken();
-		return new UnaryExpr(opr, Unary());
+		const Token& opr = PreviousToken();
+		return std::make_unique<UnaryExpr>(opr, std::move(Unary()));
 	}
 
 	return Primary();
 }
 
-Expr* Parser::Primary() {
+std::unique_ptr<Expr> Parser::Primary() {
 	if (Match(TokenType::FALSE))
-		return new LiteralExpr(false);
+		return std::make_unique<LiteralExpr>(false);
 	if (Match(TokenType::TRUE))
-		return new LiteralExpr(true);
+		return std::make_unique<LiteralExpr>(true);
 	if (Match(TokenType::NIL))
-		return new LiteralExpr(nullptr);
+		return std::make_unique<LiteralExpr>(nullptr);
 	if (Match(TokenType::NUMBER, TokenType::STRING))
-		return new LiteralExpr(PreviousToken().literal);
+		return std::make_unique<LiteralExpr>(PreviousToken().literal);
 	if (Match(TokenType::LEFT_PAREN)) {
-		Expr* expr = Expression();
+		std::unique_ptr<Expr> expr = Expression();
 		Consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
-		return new GroupingExpr(expr);
+		return std::make_unique<GroupingExpr>(std::move(expr));
 	}
+	throw Error(CurrentToken(), "Expect expression.");
 }
 
-Token& Parser::CurrentToken()
+const Token& Parser::CurrentToken() const
 {
 	return m_Tokens[m_Current];
 }
 
-Token& Parser::PreviousToken()
+const Token& Parser::PreviousToken() const
 {
 	return m_Tokens[m_Current - 1];
 }
 
-bool Parser::IsAtEnd()
+bool Parser::IsAtEnd() const
 {
 	return CurrentToken().type == TokenType::END;
 }
 
-Token& Parser::Advance()
+const Token& Parser::Advance()
 {
 	if (!IsAtEnd())
 		m_Current++;
 	return PreviousToken();
+}
+
+const Token& Parser::Consume(TokenType type, const std::string& message)
+{
+	if (CurrentToken().type == type)
+		return Advance();
+
+	throw Error(CurrentToken(), message);
+}
+
+ParseException Parser::Error(const Token& token, const std::string& message)
+{
+	Lox::Error(token, message);
+	return ParseException(message);
+}
+
+void Parser::Synchronize()
+{
+	Advance();
+
+	while (!IsAtEnd()) {
+		if (PreviousToken().type == TokenType::SEMICOLON)
+			return;
+
+		switch (CurrentToken().type)
+		{
+		case TokenType::CLASS:
+		case TokenType::FUN:
+		case TokenType::VAR:
+		case TokenType::FOR:
+		case TokenType::IF:
+		case TokenType::WHILE:
+		case TokenType::PRINT:
+		case TokenType::RETURN:
+			return;
+		default:
+			break;
+		}
+		Advance();
+	}
 }

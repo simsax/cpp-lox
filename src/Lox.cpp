@@ -1,7 +1,8 @@
 #include <iostream>
 #include "Lox.h"
 #include "Scanner.h"
-#include "Token.h"
+#include "Parser.h"
+#include "AstPrinter.h"
 
 #define EX_USAGE 64
 #define EX_DATAERR 65
@@ -10,23 +11,33 @@ namespace Lox {
 
 	namespace {
 		bool m_HadError = false;
-		void Report(int line, const std::string& where, const std::string& message) {
+		void Report(std::size_t line, const std::string& where, const std::string& message) {
 			std::cerr << "[line " << line << "] Error" << where << "" << ": " << message << "\n";
 			m_HadError = true;
 		}
 	}
 
-	void Error(int line, const std::string& message) {
+	void Error(std::size_t line, const std::string& message) {
 		Report(line, "", message);
+	}
+
+	void Error(const Token& token, const std::string& message)
+	{
+		if (token.type == TokenType::END)
+			Report(token.line, " at end", message);
+		else
+			Report(token.line, " at '" + token.lexeme + "'", message);
 	}
 
 	void Run(const std::string& sourceCode) {
 		Scanner scanner(sourceCode);
 		std::vector<Token> tokens = scanner.ScanTokens();
-
-		//for (const auto& token : tokens) {
-		//	std::cout << token << "\n";
-		//}
+		Parser parser = Parser(tokens);
+		std::unique_ptr<Expr> expression = parser.Parse();
+		if (m_HadError)
+			return;
+		AstPrinter astPrinter;
+		std::cout << astPrinter.Print(expression.get()) << "\n";
 	}
 
 	void RunFile(const char* fileName) {
