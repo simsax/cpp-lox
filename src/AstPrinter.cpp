@@ -4,8 +4,8 @@ AstPrinter::AstPrinter()
 {
 }
 
-std::string AstPrinter::Print(Expr* expr) {
-	std::any result = expr->Accept(this);
+std::string AstPrinter::Print(Expr* expr) const {
+	std::any result = expr->Accept(*this);
 
 	if (result.type() == typeid(int)) {
 		int value = std::any_cast<int>(result);
@@ -15,22 +15,29 @@ std::string AstPrinter::Print(Expr* expr) {
 		double value = std::any_cast<double>(result);
 		return std::to_string(value);
 	}
+	else if (result.type() == typeid(bool)) {
+		bool value = std::any_cast<bool>(result);
+		return std::to_string(value);
+	}
+	else if (result.type() == typeid(nullptr)) {
+		return "null";
+	}
 	else {
 		return std::any_cast<std::string>(result);
 	}
 }
 
-std::any AstPrinter::VisitBinaryExpr(Binary* expr)
+std::any AstPrinter::VisitBinaryExpr(BinaryExpr* expr) const
 {
-	return Parenthesize(expr->m_Opr.lexeme, expr->m_Left, expr->m_Right);
+	return Parenthesize(expr->m_Opr.lexeme, expr->m_Left.get(), expr->m_Right.get());
 }
 
-std::any AstPrinter::VisitGroupingExpr(Grouping* expr)
+std::any AstPrinter::VisitGroupingExpr(GroupingExpr* expr) const
 {
-	return Parenthesize("group", expr->m_Expression);
+	return Parenthesize("group", expr->m_Expression.get());
 }
 
-std::any AstPrinter::VisitLiteralExpr(Literal* expr)
+std::any AstPrinter::VisitLiteralExpr(LiteralExpr* expr) const
 {
 	if (!expr->m_Value.has_value())
 		return "nil";
@@ -38,8 +45,8 @@ std::any AstPrinter::VisitLiteralExpr(Literal* expr)
 		return expr->m_Value;
 }
 
-std::any AstPrinter::VisitUnaryExpr(Unary* expr)
+std::any AstPrinter::VisitUnaryExpr(UnaryExpr* expr) const
 {
-	return Parenthesize(expr->m_Opr.lexeme, expr->m_Right);
+	return Parenthesize(expr->m_Opr.lexeme, expr->m_Right.get());
 }
 

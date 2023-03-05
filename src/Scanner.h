@@ -10,10 +10,10 @@ public:
 
 private:
 	void ScanToken();
-	bool IsAtEnd();
+	bool IsAtEnd() const;
 	char Advance();
-	char Peek();
-	char PeekNext();
+	char Peek() const;
+	char PeekNext() const;
 	void AddToken(TokenType type);
 	void AddToken(TokenType type, const std::any& literal);
 	bool Match(char expected);
@@ -24,7 +24,7 @@ private:
 
 	std::vector<Token> m_Tokens;
 	std::string m_SourceCode;
-	uint32_t m_Start;
-	uint32_t m_Current;
-	uint32_t m_Line;
+	std::size_t m_Start;
+	std::size_t m_Current;
+	std::size_t m_Line;
 };
