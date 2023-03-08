@@ -11,4 +11,5 @@ namespace Lox {
 	void RunPrompt();
 	void Error(std::size_t line, const std::string& message);
 	void Error(const Token& token, const std::string& message);
+	void RuntimeError(const Token& token, const std::string& message);
 };

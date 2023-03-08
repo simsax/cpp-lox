@@ -77,7 +77,7 @@ std::unique_ptr<Expr> Parser::Unary()
 {
 	while (Match(TokenType::BANG, TokenType::MINUS)) {
 		const Token& opr = PreviousToken();
-		return std::make_unique<UnaryExpr>(opr, std::move(Unary()));
+		return std::make_unique<UnaryExpr>(opr, Unary());
 	}
 
 	return Primary();

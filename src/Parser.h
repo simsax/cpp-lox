@@ -1,10 +1,22 @@
-#pragma once
+﻿#pragma once
 #include <vector>
 #include <concepts>
 #include <exception>
 #include <stdexcept>
 #include "Token.h"
 #include "Expr.h"
+
+/*
+expression     → equality ;
+equality       → comparison ( ( "!=" | "==" ) comparison )* ;
+comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
+term           → factor ( ( "-" | "+" ) factor )* ;
+factor         → unary ( ( "/" | "*" ) unary )* ;
+unary          → ( "!" | "-" ) unary
+			   | primary ;
+primary        → NUMBER | STRING | "true" | "false" | "nil"
+			   | "(" expression ")" ;
+*/
 
 template<typename T>
 concept IsTokenType = std::is_same<T, TokenType>::value;
