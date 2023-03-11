@@ -7,18 +7,19 @@ Interpreter::Interpreter()
 }
 
 
-void Interpreter::Interpret(Expr* expr)
+void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements) const
 {
 	try {
-		std::any value = Evaluate(expr);
-		std::cout << ToString(value) << "\n";
+		for (const auto& statement : statements) {
+			Execute(statement.get());
+		}
 	}
 	catch (const RuntimeException& ex) {
 		Lox::RuntimeError(ex.GetToken(), ex.what());
 	}
 }
 
-std::any Interpreter::VisitBinaryExpr(BinaryExpr* expr) const
+std::any Interpreter::VisitBinary(expr::Binary* expr) const
 {
 	std::any left = Evaluate(expr->m_Left.get());
 	std::any right = Evaluate(expr->m_Right.get());
@@ -64,17 +65,17 @@ std::any Interpreter::VisitBinaryExpr(BinaryExpr* expr) const
 	return nullptr;
 }
 
-std::any Interpreter::VisitGroupingExpr(GroupingExpr* expr) const
+std::any Interpreter::VisitGrouping(expr::Grouping* expr) const
 {
 	return Evaluate(expr->m_Expression.get());
 }
 
-std::any Interpreter::VisitLiteralExpr(LiteralExpr* expr) const
+std::any Interpreter::VisitLiteral(expr::Literal* expr) const
 {
 	return expr->m_Value;
 }
 
-std::any Interpreter::VisitUnaryExpr(UnaryExpr* expr) const
+std::any Interpreter::VisitUnary(expr::Unary* expr) const
 {
 	// post order traversal: each node evaluates the children before doing its own work
 	std::any right = Evaluate(expr->m_Right.get());
@@ -88,6 +89,19 @@ std::any Interpreter::VisitUnaryExpr(UnaryExpr* expr) const
 		break;
 	}
 	// unreachable
+	return nullptr;
+}
+
+std::any Interpreter::VisitExpression(stmt::Expression* stmt) const
+{
+	Evaluate(stmt->m_Expression.get());
+	return nullptr;
+}
+
+std::any Interpreter::VisitPrint(stmt::Print* stmt) const
+{
+	std::any value = Evaluate(stmt->m_Expression.get());
+	std::cout << ToString(value) << "\n";
 	return nullptr;
 }
 
@@ -105,9 +119,14 @@ void Interpreter::CheckNumberOperands(const Token& opr, const std::any& left, co
 	throw RuntimeException("Operands must be numbers.", opr);
 }
 
-std::any Interpreter::Evaluate(Expr* expr) const
+std::any Interpreter::Evaluate(expr::Expr* expr) const
 {
 	return expr->Accept(*this);
+}
+
+void Interpreter::Execute(stmt::Stmt* statement) const
+{
+	statement->Accept(*this);
 }
 
 bool Interpreter::IsTruthy(std::any value) const

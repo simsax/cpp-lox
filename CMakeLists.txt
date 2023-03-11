@@ -13,9 +13,8 @@ add_executable(
 	"src/Scanner.h" 
 	"src/Scanner.cpp" 
 	"src/Expr.h" 
-	"src/AstPrinter.h" 
-	"src/AstPrinter.cpp" 
 	"src/Parser.cpp" 
 	"src/Interpreter.h" 
 	"src/Interpreter.cpp" 
+	"src/Stmt.h"
 )

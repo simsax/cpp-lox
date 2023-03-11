@@ -1,11 +1,13 @@
 import re
 
+
 def define_type(base_name: str, class_name: str):
     return fr"""
 inline std::any {class_name}::Accept(const Visitor& visitor) {{
-	return visitor.Visit{class_name}(this);          
+	return visitor.Visit{class_name}(this);
 }}
 """
+
 
 def declare_type(base_name: str, class_name: str, fields_list: str):
     code = fr"""struct {class_name} : public {base_name} {{
@@ -23,7 +25,7 @@ def declare_type(base_name: str, class_name: str, fields_list: str):
         code += "\n"
     code += "\t{ }\n"
 
-    code += fr"""
+    code += r"""
     std::any Accept(const Visitor& visitor) override;
 
 """
@@ -37,6 +39,7 @@ def declare_type(base_name: str, class_name: str, fields_list: str):
     code += "};\n\n"
     return code
 
+
 def define_visitor(base_name: str, types: list):
     code = r"""class Visitor {
 public:
@@ -47,23 +50,25 @@ public:
         code += f"\tvirtual std::any Visit{class_name}({class_name}* {base_name.lower()}) const = 0;\n"
     code += "};\n\ninline Visitor::~Visitor() = default;\n"
     return code
-        
+
 
 def define_ast(base_name: str, types: list):
-    source_code = r"""#pragma once
+    source_code = fr"""#pragma once
 #include <any>
 #include <memory>
 #include "Token.h"
 
+namespace {base_name.lower()} {{
+
 class Visitor;
 
-struct Expr {
-    virtual ~Expr() = 0;
+struct {base_name} {{
+    virtual ~{base_name}() = 0;
 
     virtual std::any Accept(const Visitor& visitor) = 0;
-};
+}};
 
-inline Expr::~Expr() = default;
+inline {base_name}::~{base_name}() = default;
 
 """
 
@@ -78,17 +83,25 @@ inline Expr::~Expr() = default;
         class_name = type_.split(";")[0].strip()
         source_code += define_type(base_name, class_name)
 
+    source_code += "\n}\n" # close namespace
+
     with open(f"{base_name}.h", "w") as f:
         f.write(source_code)
 
 
 if __name__ == "__main__":
     # class_name ; fields
-    types = [
-        "BinaryExpr   ; std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right",
-        "GroupingExpr ; std::unique_ptr<Expr> expression",
-        "LiteralExpr  ; const std::any& value",
-        "UnaryExpr    ; const Token& opr, std::unique_ptr<Expr> right"
+    exprTypes = [
+        "Binary   ; std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right",
+        "Grouping ; std::unique_ptr<Expr> expression",
+        "Literal  ; const std::any& value",
+        "Unary    ; const Token& opr, std::unique_ptr<Expr> right"
     ]
 
-    define_ast("Expr", types)
+    stmtTypes = [
+        "Expression ; std::unique_ptr<expr::Expr> expression",
+        "Print      ; std::unique_ptr<expr::Expr> expression"
+    ]
+
+    define_ast("Expr", exprTypes)
+    define_ast("Stmt", stmtTypes)

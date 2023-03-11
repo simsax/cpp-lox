@@ -3,85 +3,89 @@
 #include <memory>
 #include "Token.h"
 
-class Visitor;
+namespace expr {
 
-struct Expr {
-    virtual ~Expr() = 0;
+	class Visitor;
 
-    virtual std::any Accept(const Visitor& visitor) = 0;
-};
+	struct Expr {
+		virtual ~Expr() = 0;
 
-inline Expr::~Expr() = default;
+		virtual std::any Accept(const Visitor& visitor) = 0;
+	};
 
-struct BinaryExpr : public Expr {
-    BinaryExpr(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
-	m_Left(std::move(left)),
-	m_Opr(opr),
-	m_Right(std::move(right))
-	{ }
+	inline Expr::~Expr() = default;
 
-    std::any Accept(const Visitor& visitor) override;
+	struct Binary : public Expr {
+		Binary(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
+			m_Left(std::move(left)),
+			m_Opr(opr),
+			m_Right(std::move(right))
+		{ }
 
-	std::unique_ptr<Expr> m_Left;
-	Token m_Opr;
-	std::unique_ptr<Expr> m_Right;
-};
+		std::any Accept(const Visitor& visitor) override;
 
-struct GroupingExpr : public Expr {
-    GroupingExpr(std::unique_ptr<Expr> expression) :
-	m_Expression(std::move(expression))
-	{ }
+		std::unique_ptr<Expr> m_Left;
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Right;
+	};
 
-    std::any Accept(const Visitor& visitor) override;
+	struct Grouping : public Expr {
+		Grouping(std::unique_ptr<Expr> expression) :
+			m_Expression(std::move(expression))
+		{ }
 
-	std::unique_ptr<Expr> m_Expression;
-};
+		std::any Accept(const Visitor& visitor) override;
 
-struct LiteralExpr : public Expr {
-    LiteralExpr(const std::any& value) :
-	m_Value(value)
-	{ }
+		std::unique_ptr<Expr> m_Expression;
+	};
 
-    std::any Accept(const Visitor& visitor) override;
+	struct Literal : public Expr {
+		Literal(const std::any& value) :
+			m_Value(value)
+		{ }
 
-	std::any m_Value;
-};
+		std::any Accept(const Visitor& visitor) override;
 
-struct UnaryExpr : public Expr {
-    UnaryExpr(const Token& opr, std::unique_ptr<Expr> right) :
-	m_Opr(opr),
-	m_Right(std::move(right))
-	{ }
+		std::any m_Value;
+	};
 
-    std::any Accept(const Visitor& visitor) override;
+	struct Unary : public Expr {
+		Unary(const Token& opr, std::unique_ptr<Expr> right) :
+			m_Opr(opr),
+			m_Right(std::move(right))
+		{ }
 
-	Token m_Opr;
-	std::unique_ptr<Expr> m_Right;
-};
+		std::any Accept(const Visitor& visitor) override;
 
-class Visitor {
-public:
-    virtual ~Visitor() = 0;
-	virtual std::any VisitBinaryExpr(BinaryExpr* expr) const = 0;
-	virtual std::any VisitGroupingExpr(GroupingExpr* expr) const = 0;
-	virtual std::any VisitLiteralExpr(LiteralExpr* expr) const = 0;
-	virtual std::any VisitUnaryExpr(UnaryExpr* expr) const = 0;
-};
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Right;
+	};
 
-inline Visitor::~Visitor() = default;
+	class Visitor {
+	public:
+		virtual ~Visitor() = 0;
+		virtual std::any VisitBinary(Binary* expr) const = 0;
+		virtual std::any VisitGrouping(Grouping* expr) const = 0;
+		virtual std::any VisitLiteral(Literal* expr) const = 0;
+		virtual std::any VisitUnary(Unary* expr) const = 0;
+	};
 
-inline std::any BinaryExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitBinaryExpr(this);          
-}
+	inline Visitor::~Visitor() = default;
 
-inline std::any GroupingExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitGroupingExpr(this);          
-}
+	inline std::any Binary::Accept(const Visitor& visitor) {
+		return visitor.VisitBinary(this);
+	}
 
-inline std::any LiteralExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitLiteralExpr(this);          
-}
+	inline std::any Grouping::Accept(const Visitor& visitor) {
+		return visitor.VisitGrouping(this);
+	}
 
-inline std::any UnaryExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitUnaryExpr(this);          
+	inline std::any Literal::Accept(const Visitor& visitor) {
+		return visitor.VisitLiteral(this);
+	}
+
+	inline std::any Unary::Accept(const Visitor& visitor) {
+		return visitor.VisitUnary(this);
+	}
+
 }

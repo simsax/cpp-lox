@@ -5,8 +5,16 @@
 #include <stdexcept>
 #include "Token.h"
 #include "Expr.h"
+#include "Stmt.h"
 
 /*
+// Statements
+program        → statement* EOF ;
+statement      → exprStmt | printStmt ;
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+
+// Expressions
 expression     → equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
@@ -32,16 +40,20 @@ public:
 class Parser {
 public:
 	Parser(const std::vector<Token>& tokens);
-	std::unique_ptr<Expr> Parse();
+	std::vector<std::unique_ptr<stmt::Stmt>> Parse();
 
 private:
-	std::unique_ptr<Expr> Expression();
-	std::unique_ptr<Expr> Equality();
-	std::unique_ptr<Expr> Comparison();
-	std::unique_ptr<Expr> Term();
-	std::unique_ptr<Expr> Factor();
-	std::unique_ptr<Expr> Unary();
-	std::unique_ptr<Expr> Primary();
+	std::unique_ptr<expr::Expr> Expression();
+	std::unique_ptr<expr::Expr> Equality();
+	std::unique_ptr<expr::Expr> Comparison();
+	std::unique_ptr<expr::Expr> Term();
+	std::unique_ptr<expr::Expr> Factor();
+	std::unique_ptr<expr::Expr> Unary();
+	std::unique_ptr<expr::Expr> Primary();
+
+	std::unique_ptr<stmt::Stmt> Statement();
+	std::unique_ptr<stmt::Stmt> PrintStatement();
+	std::unique_ptr<stmt::Stmt> ExpressionStatement();
 
 	const Token& CurrentToken() const;
 	const Token& PreviousToken() const;

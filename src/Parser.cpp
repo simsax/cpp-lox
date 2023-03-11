@@ -6,98 +6,117 @@ Parser::Parser(const std::vector<Token>& tokens) :
 {
 }
 
-std::unique_ptr<Expr> Parser::Parse()
+std::vector<std::unique_ptr<stmt::Stmt>> Parser::Parse()
 {
-	try {
-		return Expression();
+	std::vector<std::unique_ptr<stmt::Stmt>> statements; // vector of trees
+	while (!IsAtEnd()) {
+		statements.emplace_back(Statement());
 	}
-	catch (const ParseException& ex) {
-		std::cerr << ex.what() << "\n";
-		return std::unique_ptr<Expr>{};
-	}
+	return statements;
 }
 
-std::unique_ptr<Expr> Parser::Expression() {
+std::unique_ptr<expr::Expr> Parser::Expression() {
 	return Equality();
 }
 
-std::unique_ptr<Expr> Parser::Equality() {
-	std::unique_ptr<Expr> expr = Comparison();
+std::unique_ptr<expr::Expr> Parser::Equality() {
+	std::unique_ptr<expr::Expr> expr = Comparison();
 
 	while (Match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)) {
 		const Token& opr = PreviousToken();
-		std::unique_ptr<Expr> right = Comparison();
-		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
+		std::unique_ptr<expr::Expr> right = Comparison();
+		expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-std::unique_ptr<Expr> Parser::Comparison()
+std::unique_ptr<expr::Expr> Parser::Comparison()
 {
-	std::unique_ptr<Expr> expr = Term();
+	std::unique_ptr<expr::Expr> expr = Term();
 
 	while (Match(TokenType::GREATER, TokenType::GREATER_EQUAL,
 		TokenType::LESS, TokenType::LESS_EQUAL)) {
 		const Token& opr = PreviousToken();
-		std::unique_ptr<Expr> right = Term();
-		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
+		std::unique_ptr<expr::Expr> right = Term();
+		expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-std::unique_ptr<Expr> Parser::Term()
+std::unique_ptr<expr::Expr> Parser::Term()
 {
-	std::unique_ptr<Expr> expr = Factor();
+	std::unique_ptr<expr::Expr> expr = Factor();
 
 	while (Match(TokenType::MINUS, TokenType::PLUS)) {
 		const Token& opr = PreviousToken();
-		std::unique_ptr<Expr> right = Factor();
-		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
+		std::unique_ptr<expr::Expr> right = Factor();
+		expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-std::unique_ptr<Expr> Parser::Factor()
+std::unique_ptr<expr::Expr> Parser::Factor()
 {
-	std::unique_ptr<Expr> expr = Unary();
+	std::unique_ptr<expr::Expr> expr = Unary();
 
 	while (Match(TokenType::STAR, TokenType::SLASH)) {
 		const Token& opr = PreviousToken();
-		std::unique_ptr<Expr> right = Unary();
-		expr = std::make_unique<BinaryExpr>(std::move(expr), opr, std::move(right));
+		std::unique_ptr<expr::Expr> right = Unary();
+		expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
 	}
 
 	return expr;
 }
 
-std::unique_ptr<Expr> Parser::Unary()
+std::unique_ptr<expr::Expr> Parser::Unary()
 {
 	while (Match(TokenType::BANG, TokenType::MINUS)) {
 		const Token& opr = PreviousToken();
-		return std::make_unique<UnaryExpr>(opr, Unary());
+		return std::make_unique<expr::Unary>(opr, Unary());
 	}
 
 	return Primary();
 }
 
-std::unique_ptr<Expr> Parser::Primary() {
+std::unique_ptr<expr::Expr> Parser::Primary() {
 	if (Match(TokenType::FALSE))
-		return std::make_unique<LiteralExpr>(false);
+		return std::make_unique<expr::Literal>(false);
 	if (Match(TokenType::TRUE))
-		return std::make_unique<LiteralExpr>(true);
+		return std::make_unique<expr::Literal>(true);
 	if (Match(TokenType::NIL))
-		return std::make_unique<LiteralExpr>(nullptr);
+		return std::make_unique<expr::Literal>(nullptr);
 	if (Match(TokenType::NUMBER, TokenType::STRING))
-		return std::make_unique<LiteralExpr>(PreviousToken().literal);
+		return std::make_unique<expr::Literal>(PreviousToken().literal);
 	if (Match(TokenType::LEFT_PAREN)) {
-		std::unique_ptr<Expr> expr = Expression();
-		Consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
-		return std::make_unique<GroupingExpr>(std::move(expr));
+		std::unique_ptr<expr::Expr> expr = Expression();
+		Consume(TokenType::RIGHT_PAREN, "Expect ')' after expr::Expression.");
+		return std::make_unique<expr::Grouping>(std::move(expr));
 	}
-	throw Error(CurrentToken(), "Expect expression.");
+	throw Error(CurrentToken(), "Expect expr::Expression.");
+}
+
+std::unique_ptr<stmt::Stmt> Parser::Statement()
+{
+	if (Match(TokenType::PRINT))
+		return PrintStatement();
+	return ExpressionStatement();
+}
+
+std::unique_ptr<stmt::Stmt> Parser::PrintStatement()
+{
+	std::unique_ptr<expr::Expr> value = Expression();
+	Consume(TokenType::SEMICOLON, "Expect ';' after value.");
+	return std::make_unique<stmt::Print>(std::move(value));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::ExpressionStatement()
+{
+	std::unique_ptr<expr::Expr> expr = Expression();
+	Consume(TokenType::SEMICOLON, "Expect ';' after expr::Expression.");
+	return std::make_unique<stmt::Expression>(std::move(expr));
 }
 
 const Token& Parser::CurrentToken() const

@@ -2,7 +2,6 @@
 #include "Lox.h"
 #include "Scanner.h"
 #include "Parser.h"
-#include "AstPrinter.h"
 #include "Interpreter.h"
 
 #define EX_USAGE 64
@@ -45,12 +44,10 @@ namespace Lox {
 		Scanner scanner(sourceCode);
 		std::vector<Token> tokens = scanner.ScanTokens();
 		Parser parser = Parser(tokens);
-		std::unique_ptr<Expr> expression = parser.Parse();
+		std::vector<std::unique_ptr<stmt::Stmt>> statements = parser.Parse();
 		if (m_HadError)
 			return;
-		//AstPrinter astPrinter;
-		//std::cout << astPrinter.Print(expression.get()) << "\n";
-		m_Interpreter.Interpret(expression.get());
+		m_Interpreter.Interpret(statements);
 	}
 
 	void RunFile(const char* fileName) {
