@@ -11,7 +11,7 @@ namespace stmt {
 	struct Stmt {
 		virtual ~Stmt() = 0;
 
-		virtual std::any Accept(const Visitor& visitor) = 0;
+		virtual std::any Accept(Visitor& visitor) = 0;
 	};
 
 	inline Stmt::~Stmt() = default;
@@ -21,7 +21,7 @@ namespace stmt {
 			m_Expression(std::move(expression))
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		std::unique_ptr<expr::Expr> m_Expression;
 	};
@@ -31,26 +31,43 @@ namespace stmt {
 			m_Expression(std::move(expression))
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		std::unique_ptr<expr::Expr> m_Expression;
+	};
+
+	struct Var : public Stmt {
+		Var(const Token& name, std::unique_ptr<expr::Expr> initializer) :
+			m_Name(name),
+			m_Initializer(std::move(initializer))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		std::unique_ptr<expr::Expr> m_Initializer;
 	};
 
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
-		virtual std::any VisitExpression(Expression* stmt) const = 0;
-		virtual std::any VisitPrint(Print* stmt) const = 0;
+		virtual std::any VisitExpression(Expression* stmt) = 0;
+		virtual std::any VisitPrint(Print* stmt) = 0;
+		virtual std::any VisitVar(Var* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
 
-	inline std::any Expression::Accept(const Visitor& visitor) {
+	inline std::any Expression::Accept(Visitor& visitor) {
 		return visitor.VisitExpression(this);
 	}
 
-	inline std::any Print::Accept(const Visitor& visitor) {
+	inline std::any Print::Accept(Visitor& visitor) {
 		return visitor.VisitPrint(this);
+	}
+
+	inline std::any Var::Accept(Visitor& visitor) {
+		return visitor.VisitVar(this);
 	}
 
 }

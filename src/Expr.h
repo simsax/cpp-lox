@@ -3,6 +3,7 @@
 #include <memory>
 #include "Token.h"
 
+
 namespace expr {
 
 	class Visitor;
@@ -10,7 +11,7 @@ namespace expr {
 	struct Expr {
 		virtual ~Expr() = 0;
 
-		virtual std::any Accept(const Visitor& visitor) = 0;
+		virtual std::any Accept(Visitor& visitor) = 0;
 	};
 
 	inline Expr::~Expr() = default;
@@ -22,7 +23,7 @@ namespace expr {
 			m_Right(std::move(right))
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		std::unique_ptr<Expr> m_Left;
 		Token m_Opr;
@@ -34,7 +35,7 @@ namespace expr {
 			m_Expression(std::move(expression))
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		std::unique_ptr<Expr> m_Expression;
 	};
@@ -44,7 +45,7 @@ namespace expr {
 			m_Value(value)
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		std::any m_Value;
 	};
@@ -55,37 +56,52 @@ namespace expr {
 			m_Right(std::move(right))
 		{ }
 
-		std::any Accept(const Visitor& visitor) override;
+		std::any Accept(Visitor& visitor) override;
 
 		Token m_Opr;
 		std::unique_ptr<Expr> m_Right;
 	};
 
+	struct Variable : public Expr {
+		Variable(const Token& name) :
+			m_Name(name)
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
-		virtual std::any VisitBinary(Binary* expr) const = 0;
-		virtual std::any VisitGrouping(Grouping* expr) const = 0;
-		virtual std::any VisitLiteral(Literal* expr) const = 0;
-		virtual std::any VisitUnary(Unary* expr) const = 0;
+		virtual std::any VisitBinary(Binary* expr) = 0;
+		virtual std::any VisitGrouping(Grouping* expr) = 0;
+		virtual std::any VisitLiteral(Literal* expr) = 0;
+		virtual std::any VisitUnary(Unary* expr) = 0;
+		virtual std::any VisitVariable(Variable* expr) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
 
-	inline std::any Binary::Accept(const Visitor& visitor) {
+	inline std::any Binary::Accept(Visitor& visitor) {
 		return visitor.VisitBinary(this);
 	}
 
-	inline std::any Grouping::Accept(const Visitor& visitor) {
+	inline std::any Grouping::Accept(Visitor& visitor) {
 		return visitor.VisitGrouping(this);
 	}
 
-	inline std::any Literal::Accept(const Visitor& visitor) {
+	inline std::any Literal::Accept(Visitor& visitor) {
 		return visitor.VisitLiteral(this);
 	}
 
-	inline std::any Unary::Accept(const Visitor& visitor) {
+	inline std::any Unary::Accept(Visitor& visitor) {
 		return visitor.VisitUnary(this);
+	}
+
+	inline std::any Variable::Accept(Visitor& visitor) {
+		return visitor.VisitVariable(this);
 	}
 
 }

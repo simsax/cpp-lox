@@ -9,7 +9,9 @@
 
 /*
 // Statements
-program        → statement* EOF ;
+program        → declaration* EOF ;
+declaration	   → varDecl | statement ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 statement      → exprStmt | printStmt ;
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
@@ -23,7 +25,7 @@ factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary
 			   | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
-			   | "(" expression ")" ;
+			   | "(" expression ")" | IDENTIFIER ;
 */
 
 template<typename T>
@@ -39,7 +41,7 @@ public:
 
 class Parser {
 public:
-	Parser(const std::vector<Token>& tokens);
+	explicit Parser(const std::vector<Token>& tokens);
 	std::vector<std::unique_ptr<stmt::Stmt>> Parse();
 
 private:
@@ -52,6 +54,8 @@ private:
 	std::unique_ptr<expr::Expr> Primary();
 
 	std::unique_ptr<stmt::Stmt> Statement();
+	std::unique_ptr<stmt::Stmt> Declaration();
+	std::unique_ptr<stmt::Stmt> VarDeclaration();
 	std::unique_ptr<stmt::Stmt> PrintStatement();
 	std::unique_ptr<stmt::Stmt> ExpressionStatement();
 

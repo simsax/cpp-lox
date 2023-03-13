@@ -2,12 +2,13 @@
 #include "Lox.h"
 #include <regex>
 
-Interpreter::Interpreter()
+Interpreter::Interpreter() :
+	m_Environment({})
 {
 }
 
 
-void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements) const
+void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
 	try {
 		for (const auto& statement : statements) {
@@ -19,7 +20,7 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 	}
 }
 
-std::any Interpreter::VisitBinary(expr::Binary* expr) const
+std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());
 	std::any right = Evaluate(expr->m_Right.get());
@@ -65,17 +66,17 @@ std::any Interpreter::VisitBinary(expr::Binary* expr) const
 	return nullptr;
 }
 
-std::any Interpreter::VisitGrouping(expr::Grouping* expr) const
+std::any Interpreter::VisitGrouping(expr::Grouping* expr)
 {
 	return Evaluate(expr->m_Expression.get());
 }
 
-std::any Interpreter::VisitLiteral(expr::Literal* expr) const
+std::any Interpreter::VisitLiteral(expr::Literal* expr)
 {
 	return expr->m_Value;
 }
 
-std::any Interpreter::VisitUnary(expr::Unary* expr) const
+std::any Interpreter::VisitUnary(expr::Unary* expr)
 {
 	// post order traversal: each node evaluates the children before doing its own work
 	std::any right = Evaluate(expr->m_Right.get());
@@ -92,20 +93,35 @@ std::any Interpreter::VisitUnary(expr::Unary* expr) const
 	return nullptr;
 }
 
-std::any Interpreter::VisitExpression(stmt::Expression* stmt) const
+std::any Interpreter::VisitVariable(expr::Variable* expr)
+{
+	return m_Environment.Get(expr->m_Name);
+}
+
+std::any Interpreter::VisitExpression(stmt::Expression* stmt)
 {
 	Evaluate(stmt->m_Expression.get());
 	return nullptr;
 }
 
-std::any Interpreter::VisitPrint(stmt::Print* stmt) const
+std::any Interpreter::VisitPrint(stmt::Print* stmt)
 {
 	std::any value = Evaluate(stmt->m_Expression.get());
 	std::cout << ToString(value) << "\n";
 	return nullptr;
 }
 
-void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand) const
+std::any Interpreter::VisitVar(stmt::Var* stmt)
+{
+	std::any value = nullptr;
+	expr::Expr* initializer = stmt->m_Initializer.get();
+	if (initializer != nullptr)
+		value = Evaluate(initializer);
+	m_Environment.Define(stmt->m_Name.lexeme, value);
+	return nullptr;
+}
+
+void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
 		return;
@@ -119,12 +135,12 @@ void Interpreter::CheckNumberOperands(const Token& opr, const std::any& left, co
 	throw RuntimeException("Operands must be numbers.", opr);
 }
 
-std::any Interpreter::Evaluate(expr::Expr* expr) const
+std::any Interpreter::Evaluate(expr::Expr* expr)
 {
 	return expr->Accept(*this);
 }
 
-void Interpreter::Execute(stmt::Stmt* statement) const
+void Interpreter::Execute(stmt::Stmt* statement)
 {
 	statement->Accept(*this);
 }
@@ -172,7 +188,7 @@ std::string Interpreter::ToString(const std::any& value) const
 			return "false";
 	}
 	else if (value.type() == typeid(nullptr)) {
-		return "null";
+		return "nil";
 	}
 	else {
 		return std::any_cast<std::string>(value);
