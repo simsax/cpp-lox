@@ -26,6 +26,7 @@ public:
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 
+	std::any VisitAssign(expr::Assign* expr) override;
 	std::any VisitBinary(expr::Binary* expr) override;
 	std::any VisitGrouping(expr::Grouping* expr) override;
 	std::any VisitLiteral(expr::Literal* expr) override;

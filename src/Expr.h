@@ -16,6 +16,18 @@ namespace expr {
 
 	inline Expr::~Expr() = default;
 
+	struct Assign : public Expr {
+		Assign(const Token& name, std::unique_ptr<Expr> value) :
+			m_Name(name),
+			m_Value(std::move(value))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		std::unique_ptr<Expr> m_Value;
+	};
+
 	struct Binary : public Expr {
 		Binary(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
 			m_Left(std::move(left)),
@@ -75,6 +87,7 @@ namespace expr {
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
+		virtual std::any VisitAssign(Assign* expr) = 0;
 		virtual std::any VisitBinary(Binary* expr) = 0;
 		virtual std::any VisitGrouping(Grouping* expr) = 0;
 		virtual std::any VisitLiteral(Literal* expr) = 0;
@@ -83,6 +96,10 @@ namespace expr {
 	};
 
 	inline Visitor::~Visitor() = default;
+
+	inline std::any Assign::Accept(Visitor& visitor) {
+		return visitor.VisitAssign(this);
+	}
 
 	inline std::any Binary::Accept(Visitor& visitor) {
 		return visitor.VisitBinary(this);

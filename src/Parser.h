@@ -18,12 +18,12 @@ printStmt      → "print" expression ";" ;
 
 // Expressions
 expression     → equality ;
+assignment     → IDENTIFIER "=" assignment | equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
-			   | primary ;
+unary          → ( "!" | "-" ) unary | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
@@ -46,6 +46,7 @@ public:
 
 private:
 	std::unique_ptr<expr::Expr> Expression();
+	std::unique_ptr<expr::Expr> Assignment();
 	std::unique_ptr<expr::Expr> Equality();
 	std::unique_ptr<expr::Expr> Comparison();
 	std::unique_ptr<expr::Expr> Term();

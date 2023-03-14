@@ -16,7 +16,24 @@ std::vector<std::unique_ptr<stmt::Stmt>> Parser::Parse()
 }
 
 std::unique_ptr<expr::Expr> Parser::Expression() {
-	return Equality();
+	return Assignment();
+}
+
+std::unique_ptr<expr::Expr> Parser::Assignment()
+{
+	std::unique_ptr<expr::Expr> expr = Equality();
+	if (Match(TokenType::EQUAL)) {
+		const Token& equals = PreviousToken();
+		std::unique_ptr<expr::Expr> value = Assignment();
+		if (auto var = dynamic_cast<expr::Variable*>(expr.get())) {
+			return std::make_unique<expr::Assign>(var->m_Name, std::move(value));
+		}
+		else {
+			Error(equals, "Invalid assignment target.");
+		}
+	}
+
+	return expr;
 }
 
 std::unique_ptr<expr::Expr> Parser::Equality() {

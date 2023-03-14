@@ -20,6 +20,13 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 	}
 }
 
+std::any Interpreter::VisitAssign(expr::Assign* expr)
+{
+	std::any assignmentValue = Evaluate(expr->m_Value.get());
+	m_Environment.Assign(expr->m_Name, assignmentValue);
+	return assignmentValue;
+}
+
 std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());
@@ -117,7 +124,7 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 	expr::Expr* initializer = stmt->m_Initializer.get();
 	if (initializer != nullptr)
 		value = Evaluate(initializer);
-	m_Environment.Define(stmt->m_Name.lexeme, value);
+	m_Environment.Define(stmt->m_Name, value);
 	return nullptr;
 }
 

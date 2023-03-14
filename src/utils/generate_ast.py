@@ -93,6 +93,7 @@ inline {base_name}::~{base_name}() = default;
 if __name__ == "__main__":
     # class_name ; fields
     exprTypes = [
+        "Assign   ; const Token& name, std::unique_ptr<Expr> value",
         "Binary   ; std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right",
         "Grouping ; std::unique_ptr<Expr> expression",
         "Literal  ; const std::any& value",
