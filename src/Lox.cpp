@@ -50,6 +50,22 @@ namespace Lox {
 		m_Interpreter.Interpret(statements);
 	}
 
+	void RunRepl(const std::string& sourceCode) {
+		Scanner scanner(sourceCode);
+		std::vector<Token> tokens = scanner.ScanTokens();
+		Parser parser = Parser(tokens);
+		std::vector<std::unique_ptr<stmt::Stmt>> statements = parser.Parse();
+		if (m_HadError)
+			return;
+		if (auto expr = dynamic_cast<stmt::Expression*>(statements[0].get());
+			expr != nullptr && statements.size() == 1) {
+			m_Interpreter.Interpret(expr->m_Expression.get());
+		}
+		else {
+			m_Interpreter.Interpret(statements);
+		}
+	}
+
 	void RunFile(const char* fileName) {
 		std::ifstream file(fileName, std::ios::binary | std::ios::ate);
 		if (!file.is_open()) {
@@ -73,7 +89,7 @@ namespace Lox {
 		std::cout << "> ";
 		while (std::getline(std::cin, line)) {
 			if (!line.empty())
-				Run(line);
+				RunRepl(line);
 			std::cout << "> ";
 			m_HadError = false;
 		}

@@ -24,6 +24,19 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 	}
 }
 
+void Interpreter::Interpret(expr::Expr* expression)
+{
+	try {
+		Environment globalEnvironment = Environment();
+		m_CurrentEnvironment = &globalEnvironment;
+		std::any value = Evaluate(expression);
+		std::cout << ToString(value) << "\n";
+	}
+	catch (const RuntimeException& ex) {
+		Lox::RuntimeError(ex.GetToken(), ex.what());
+	}
+}
+
 std::any Interpreter::VisitAssign(expr::Assign* expr)
 {
 	std::any assignmentValue = Evaluate(expr->m_Value.get());

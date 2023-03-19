@@ -32,6 +32,7 @@ public:
 	Interpreter();
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
+	void Interpret(expr::Expr* expression);
 
 	std::any VisitAssign(expr::Assign* expr) override;
 	std::any VisitBinary(expr::Binary* expr) override;

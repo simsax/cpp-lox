@@ -3,13 +3,11 @@
 #include "Interpreter.h"
 
 Environment::Environment() :
-	m_Variables({}),
 	m_Enclosing(nullptr)
 {
 }
 
 Environment::Environment(Environment* enclosing) :
-	m_Variables({}),
 	m_Enclosing(enclosing)
 {
 }
@@ -35,7 +33,10 @@ void Environment::Assign(const Token& name, const std::any& value)
 std::any Environment::Get(const Token& name) const
 {
 	try {
-		return m_Variables.at(name.lexeme);
+		std::any value = m_Variables.at(name.lexeme);
+		if (value.type() == typeid(std::nullptr_t))
+			throw RuntimeException("Variable '" + name.lexeme + "' has not been initialized.", name);
+		return value;
 	}
 	catch (const std::out_of_range&) {
 		if (m_Enclosing != nullptr) {
