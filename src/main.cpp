@@ -1,6 +1,5 @@
 #include <iostream>
 #include "Lox.h"
-#include "RPNPrinter.h"
 #include "Expr.h"
 
 #define EX_USAGE 64

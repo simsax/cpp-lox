@@ -5,7 +5,7 @@
 
 class Scanner {
 public:
-	Scanner(std::string sourceCode);
+	explicit Scanner(std::string sourceCode);
 	std::vector<Token> ScanTokens();
 
 private:

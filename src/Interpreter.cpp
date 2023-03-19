@@ -2,23 +2,36 @@
 #include "Lox.h"
 #include <regex>
 
-Interpreter::Interpreter()
+Interpreter::Interpreter() :
+	m_CurrentEnvironment(nullptr)
 {
 }
 
 
-void Interpreter::Interpret(Expr* expr)
+void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
 	try {
-		std::any value = Evaluate(expr);
-		std::cout << ToString(value) << "\n";
+		// ugly state-machine like solution
+		// the alternative is to pass the environment to each visit method
+		Environment globalEnvironment = Environment();
+		m_CurrentEnvironment = &globalEnvironment;
+		for (const auto& statement : statements) {
+			Execute(statement.get());
+		}
 	}
 	catch (const RuntimeException& ex) {
 		Lox::RuntimeError(ex.GetToken(), ex.what());
 	}
 }
 
-std::any Interpreter::VisitBinaryExpr(BinaryExpr* expr) const
+std::any Interpreter::VisitAssign(expr::Assign* expr)
+{
+	std::any assignmentValue = Evaluate(expr->m_Value.get());
+	m_CurrentEnvironment->Assign(expr->m_Name, assignmentValue);
+	return assignmentValue;
+}
+
+std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());
 	std::any right = Evaluate(expr->m_Right.get());
@@ -72,17 +85,17 @@ std::any Interpreter::VisitBinaryExpr(BinaryExpr* expr) const
 	return nullptr;
 }
 
-std::any Interpreter::VisitGroupingExpr(GroupingExpr* expr) const
+std::any Interpreter::VisitGrouping(expr::Grouping* expr)
 {
 	return Evaluate(expr->m_Expression.get());
 }
 
-std::any Interpreter::VisitLiteralExpr(LiteralExpr* expr) const
+std::any Interpreter::VisitLiteral(expr::Literal* expr)
 {
 	return expr->m_Value;
 }
 
-std::any Interpreter::VisitUnaryExpr(UnaryExpr* expr) const
+std::any Interpreter::VisitUnary(expr::Unary* expr)
 {
 	// post order traversal: each node evaluates the children before doing its own work
 	std::any right = Evaluate(expr->m_Right.get());
@@ -99,7 +112,41 @@ std::any Interpreter::VisitUnaryExpr(UnaryExpr* expr) const
 	return nullptr;
 }
 
-void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand) const
+std::any Interpreter::VisitVariable(expr::Variable* expr)
+{
+	return m_CurrentEnvironment->Get(expr->m_Name);
+}
+
+std::any Interpreter::VisitExpression(stmt::Expression* stmt)
+{
+	Evaluate(stmt->m_Expression.get());
+	return nullptr;
+}
+
+std::any Interpreter::VisitPrint(stmt::Print* stmt)
+{
+	std::any value = Evaluate(stmt->m_Expression.get());
+	std::cout << ToString(value) << "\n";
+	return nullptr;
+}
+
+std::any Interpreter::VisitVar(stmt::Var* stmt)
+{
+	std::any value = nullptr;
+	expr::Expr* initializer = stmt->m_Initializer.get();
+	if (initializer != nullptr)
+		value = Evaluate(initializer);
+	m_CurrentEnvironment->Define(stmt->m_Name, value);
+	return nullptr;
+}
+
+std::any Interpreter::VisitBlock(stmt::Block* stmt)
+{
+	ExecuteBlock(stmt->m_Statements);
+	return nullptr;
+}
+
+void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
 		return;
@@ -113,9 +160,32 @@ void Interpreter::CheckNumberOperands(const Token& opr, const std::any& left, co
 	throw RuntimeException("Operands must be numbers.", opr);
 }
 
-std::any Interpreter::Evaluate(Expr* expr) const
+std::any Interpreter::Evaluate(expr::Expr* expr)
 {
 	return expr->Accept(*this);
+}
+
+void Interpreter::Execute(stmt::Stmt* statement)
+{
+	statement->Accept(*this);
+}
+
+void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
+{
+	Environment localEnvironment = Environment(m_CurrentEnvironment);
+	Environment* previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = &localEnvironment;
+
+	try {
+		for (const auto& statement : statements) {
+			Execute(statement.get());
+		}
+		m_CurrentEnvironment = previous;
+	}
+	catch (const RuntimeException& ex) {
+		m_CurrentEnvironment = previous;
+		throw ex;
+	}
 }
 
 bool Interpreter::IsTruthy(std::any value) const

@@ -3,85 +3,122 @@
 #include <memory>
 #include "Token.h"
 
-class Visitor;
 
-struct Expr {
-    virtual ~Expr() = 0;
+namespace expr {
 
-    virtual std::any Accept(const Visitor& visitor) = 0;
-};
+	class Visitor;
 
-inline Expr::~Expr() = default;
+	struct Expr {
+		virtual ~Expr() = 0;
 
-struct BinaryExpr : public Expr {
-    BinaryExpr(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
-	m_Left(std::move(left)),
-	m_Opr(opr),
-	m_Right(std::move(right))
-	{ }
+		virtual std::any Accept(Visitor& visitor) = 0;
+	};
 
-    std::any Accept(const Visitor& visitor) override;
+	inline Expr::~Expr() = default;
 
-	std::unique_ptr<Expr> m_Left;
-	Token m_Opr;
-	std::unique_ptr<Expr> m_Right;
-};
+	struct Assign : public Expr {
+		Assign(const Token& name, std::unique_ptr<Expr> value) :
+			m_Name(name),
+			m_Value(std::move(value))
+		{ }
 
-struct GroupingExpr : public Expr {
-    GroupingExpr(std::unique_ptr<Expr> expression) :
-	m_Expression(std::move(expression))
-	{ }
+		std::any Accept(Visitor& visitor) override;
 
-    std::any Accept(const Visitor& visitor) override;
+		Token m_Name;
+		std::unique_ptr<Expr> m_Value;
+	};
 
-	std::unique_ptr<Expr> m_Expression;
-};
+	struct Binary : public Expr {
+		Binary(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
+			m_Left(std::move(left)),
+			m_Opr(opr),
+			m_Right(std::move(right))
+		{ }
 
-struct LiteralExpr : public Expr {
-    LiteralExpr(const std::any& value) :
-	m_Value(value)
-	{ }
+		std::any Accept(Visitor& visitor) override;
 
-    std::any Accept(const Visitor& visitor) override;
+		std::unique_ptr<Expr> m_Left;
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Right;
+	};
 
-	std::any m_Value;
-};
+	struct Grouping : public Expr {
+		Grouping(std::unique_ptr<Expr> expression) :
+			m_Expression(std::move(expression))
+		{ }
 
-struct UnaryExpr : public Expr {
-    UnaryExpr(const Token& opr, std::unique_ptr<Expr> right) :
-	m_Opr(opr),
-	m_Right(std::move(right))
-	{ }
+		std::any Accept(Visitor& visitor) override;
 
-    std::any Accept(const Visitor& visitor) override;
+		std::unique_ptr<Expr> m_Expression;
+	};
 
-	Token m_Opr;
-	std::unique_ptr<Expr> m_Right;
-};
+	struct Literal : public Expr {
+		Literal(const std::any& value) :
+			m_Value(value)
+		{ }
 
-class Visitor {
-public:
-    virtual ~Visitor() = 0;
-	virtual std::any VisitBinaryExpr(BinaryExpr* expr) const = 0;
-	virtual std::any VisitGroupingExpr(GroupingExpr* expr) const = 0;
-	virtual std::any VisitLiteralExpr(LiteralExpr* expr) const = 0;
-	virtual std::any VisitUnaryExpr(UnaryExpr* expr) const = 0;
-};
+		std::any Accept(Visitor& visitor) override;
 
-inline Visitor::~Visitor() = default;
+		std::any m_Value;
+	};
 
-inline std::any BinaryExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitBinaryExpr(this);          
-}
+	struct Unary : public Expr {
+		Unary(const Token& opr, std::unique_ptr<Expr> right) :
+			m_Opr(opr),
+			m_Right(std::move(right))
+		{ }
 
-inline std::any GroupingExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitGroupingExpr(this);          
-}
+		std::any Accept(Visitor& visitor) override;
 
-inline std::any LiteralExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitLiteralExpr(this);          
-}
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Right;
+	};
 
-inline std::any UnaryExpr::Accept(const Visitor& visitor) {
-	return visitor.VisitUnaryExpr(this);          
+	struct Variable : public Expr {
+		Variable(const Token& name) :
+			m_Name(name)
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+	};
+
+	class Visitor {
+	public:
+		virtual ~Visitor() = 0;
+		virtual std::any VisitAssign(Assign* expr) = 0;
+		virtual std::any VisitBinary(Binary* expr) = 0;
+		virtual std::any VisitGrouping(Grouping* expr) = 0;
+		virtual std::any VisitLiteral(Literal* expr) = 0;
+		virtual std::any VisitUnary(Unary* expr) = 0;
+		virtual std::any VisitVariable(Variable* expr) = 0;
+	};
+
+	inline Visitor::~Visitor() = default;
+
+	inline std::any Assign::Accept(Visitor& visitor) {
+		return visitor.VisitAssign(this);
+	}
+
+	inline std::any Binary::Accept(Visitor& visitor) {
+		return visitor.VisitBinary(this);
+	}
+
+	inline std::any Grouping::Accept(Visitor& visitor) {
+		return visitor.VisitGrouping(this);
+	}
+
+	inline std::any Literal::Accept(Visitor& visitor) {
+		return visitor.VisitLiteral(this);
+	}
+
+	inline std::any Unary::Accept(Visitor& visitor) {
+		return visitor.VisitUnary(this);
+	}
+
+	inline std::any Variable::Accept(Visitor& visitor) {
+		return visitor.VisitVariable(this);
+	}
+
 }

@@ -5,18 +5,29 @@
 #include <stdexcept>
 #include "Token.h"
 #include "Expr.h"
+#include "Stmt.h"
 
 /*
+// Statements
+program        → declaration* EOF ;
+declaration	   → varDecl | statement ;
+varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
+statement      → exprStmt | printStmt | block ;
+exprStmt       → expression ";" ;
+printStmt      → "print" expression ";" ;
+block          → "{" declaration* "}" ;
+
+// Expressions
 comma		   → expression ( "," expression )* ;
 expression     → equality ;
+assignment     → IDENTIFIER "=" assignment | equality ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary
-			   | primary ;
+unary          → ( "!" | "-" ) unary | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
-			   | "(" expression ")" ;
+			   | "(" expression ")" | IDENTIFIER ;
 */
 
 // TODO: ternary operator
@@ -34,18 +45,27 @@ public:
 
 class Parser {
 public:
-	Parser(const std::vector<Token>& tokens);
-	std::unique_ptr<Expr> Parse();
+	explicit Parser(const std::vector<Token>& tokens);
+	std::vector<std::unique_ptr<stmt::Stmt>> Parse();
 
 private:
-	std::unique_ptr<Expr> Comma();
-	std::unique_ptr<Expr> Expression();
-	std::unique_ptr<Expr> Equality();
-	std::unique_ptr<Expr> Comparison();
-	std::unique_ptr<Expr> Term();
-	std::unique_ptr<Expr> Factor();
-	std::unique_ptr<Expr> Unary();
-	std::unique_ptr<Expr> Primary();
+	std::unique_ptr<expr::Expr> Expression();
+	std::unique_ptr<expr::Expr> Comma();
+	std::unique_ptr<expr::Expr> Assignment();
+	std::unique_ptr<expr::Expr> Equality();
+	std::unique_ptr<expr::Expr> Comparison();
+	std::unique_ptr<expr::Expr> Term();
+	std::unique_ptr<expr::Expr> Factor();
+	std::unique_ptr<expr::Expr> Unary();
+	std::unique_ptr<expr::Expr> Primary();
+
+	std::unique_ptr<stmt::Stmt> Statement();
+	std::unique_ptr<stmt::Stmt> Declaration();
+	std::unique_ptr<stmt::Stmt> VarDeclaration();
+	std::unique_ptr<stmt::Stmt> PrintStatement();
+	std::unique_ptr<stmt::Stmt> ExpressionStatement();
+
+	std::vector<std::unique_ptr<stmt::Stmt>> Block();
 
 	const Token& CurrentToken() const;
 	const Token& PreviousToken() const;
