@@ -3,7 +3,7 @@
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_Environment({})
+	m_CurrentEnvironment(nullptr)
 {
 }
 
@@ -11,6 +11,10 @@ Interpreter::Interpreter() :
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
 	try {
+		// ugly state-machine like solution
+		// the alternative is to pass the environment to each visit method
+		Environment globalEnvironment = Environment();
+		m_CurrentEnvironment = &globalEnvironment;
 		for (const auto& statement : statements) {
 			Execute(statement.get());
 		}
@@ -23,7 +27,7 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 std::any Interpreter::VisitAssign(expr::Assign* expr)
 {
 	std::any assignmentValue = Evaluate(expr->m_Value.get());
-	m_Environment.Assign(expr->m_Name, assignmentValue);
+	m_CurrentEnvironment->Assign(expr->m_Name, assignmentValue);
 	return assignmentValue;
 }
 
@@ -102,7 +106,7 @@ std::any Interpreter::VisitUnary(expr::Unary* expr)
 
 std::any Interpreter::VisitVariable(expr::Variable* expr)
 {
-	return m_Environment.Get(expr->m_Name);
+	return m_CurrentEnvironment->Get(expr->m_Name);
 }
 
 std::any Interpreter::VisitExpression(stmt::Expression* stmt)
@@ -124,7 +128,13 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 	expr::Expr* initializer = stmt->m_Initializer.get();
 	if (initializer != nullptr)
 		value = Evaluate(initializer);
-	m_Environment.Define(stmt->m_Name, value);
+	m_CurrentEnvironment->Define(stmt->m_Name, value);
+	return nullptr;
+}
+
+std::any Interpreter::VisitBlock(stmt::Block* stmt)
+{
+	ExecuteBlock(stmt->m_Statements);
 	return nullptr;
 }
 
@@ -150,6 +160,24 @@ std::any Interpreter::Evaluate(expr::Expr* expr)
 void Interpreter::Execute(stmt::Stmt* statement)
 {
 	statement->Accept(*this);
+}
+
+void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
+{
+	Environment localEnvironment = Environment(m_CurrentEnvironment);
+	Environment* previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = &localEnvironment;
+
+	try {
+		for (const auto& statement : statements) {
+			Execute(statement.get());
+		}
+		m_CurrentEnvironment = previous;
+	}
+	catch (const RuntimeException& ex) {
+		m_CurrentEnvironment = previous;
+		throw ex;
+	}
 }
 
 bool Interpreter::IsTruthy(std::any value) const

@@ -102,6 +102,7 @@ if __name__ == "__main__":
     ]
 
     stmtTypes = [
+        "Block      ; const std::vector<std::unique_ptr<stmt::Stmt>>& statements",
         "Expression ; std::unique_ptr<expr::Expr> expression",
         "Print      ; std::unique_ptr<expr::Expr> expression",
         "Var        ; const Token& name, std::unique_ptr<expr::Expr> initializer"   

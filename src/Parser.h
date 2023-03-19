@@ -12,9 +12,10 @@
 program        → declaration* EOF ;
 declaration	   → varDecl | statement ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement      → exprStmt | printStmt ;
+statement      → exprStmt | printStmt | block ;
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
+block          → "{" declaration* "}" ;
 
 // Expressions
 expression     → equality ;
@@ -59,6 +60,8 @@ private:
 	std::unique_ptr<stmt::Stmt> VarDeclaration();
 	std::unique_ptr<stmt::Stmt> PrintStatement();
 	std::unique_ptr<stmt::Stmt> ExpressionStatement();
+
+	std::vector<std::unique_ptr<stmt::Stmt>> Block();
 
 	const Token& CurrentToken() const;
 	const Token& PreviousToken() const;

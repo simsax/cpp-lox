@@ -36,6 +36,7 @@ public:
 	std::any VisitExpression(stmt::Expression* stmt) override;
 	std::any VisitPrint(stmt::Print* stmt) override;
 	std::any VisitVar(stmt::Var* stmt) override;
+	std::any VisitBlock(stmt::Block* stmt) override;
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;
@@ -43,8 +44,9 @@ private:
 
 	std::any Evaluate(expr::Expr* expr);
 	void Execute(stmt::Stmt* statement);
+	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
 
-	Environment m_Environment;
+	Environment* m_CurrentEnvironment;
 };

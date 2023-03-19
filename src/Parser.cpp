@@ -97,7 +97,6 @@ std::unique_ptr<expr::Expr> Parser::Unary()
 
 	return Primary();
 }
-
 std::unique_ptr<expr::Expr> Parser::Primary() {
 	if (Match(TokenType::FALSE))
 		return std::make_unique<expr::Literal>(false);
@@ -121,7 +120,19 @@ std::unique_ptr<stmt::Stmt> Parser::Statement()
 {
 	if (Match(TokenType::PRINT))
 		return PrintStatement();
+	if (Match(TokenType::LEFT_BRACE))
+		return std::make_unique<stmt::Block>(Block());
 	return ExpressionStatement();
+}
+
+std::vector<std::unique_ptr<stmt::Stmt>> Parser::Block()
+{
+	std::vector<std::unique_ptr<stmt::Stmt>> statements;
+	while (!IsAtEnd() && CurrentToken().type != TokenType::RIGHT_BRACE) {
+		statements.emplace_back(Declaration());
+	}
+	Consume(TokenType::RIGHT_BRACE, "Expect '}' after block.");
+	return statements;
 }
 
 std::unique_ptr<stmt::Stmt> Parser::Declaration()

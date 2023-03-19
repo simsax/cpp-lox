@@ -1,6 +1,7 @@
 #pragma once
 #include <any>
 #include <memory>
+#include <vector>
 #include "Token.h"
 #include "Expr.h"
 
@@ -15,6 +16,16 @@ namespace stmt {
 	};
 
 	inline Stmt::~Stmt() = default;
+
+	struct Block : public Stmt {
+		Block(std::vector<std::unique_ptr<stmt::Stmt>> statements) :
+			m_Statements(std::move(statements))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::vector<std::unique_ptr<stmt::Stmt>> m_Statements;
+	};
 
 	struct Expression : public Stmt {
 		Expression(std::unique_ptr<expr::Expr> expression) :
@@ -51,12 +62,17 @@ namespace stmt {
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
+		virtual std::any VisitBlock(Block* stmt) = 0;
 		virtual std::any VisitExpression(Expression* stmt) = 0;
 		virtual std::any VisitPrint(Print* stmt) = 0;
 		virtual std::any VisitVar(Var* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
+
+	inline std::any Block::Accept(Visitor& visitor) {
+		return visitor.VisitBlock(this);
+	}
 
 	inline std::any Expression::Accept(Visitor& visitor) {
 		return visitor.VisitExpression(this);
