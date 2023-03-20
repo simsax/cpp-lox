@@ -28,6 +28,7 @@ public:
 
 	std::any VisitAssign(expr::Assign* expr) override;
 	std::any VisitBinary(expr::Binary* expr) override;
+	std::any VisitLogical(expr::Logical* expr) override;
 	std::any VisitGrouping(expr::Grouping* expr) override;
 	std::any VisitLiteral(expr::Literal* expr) override;
 	std::any VisitUnary(expr::Unary* expr) override;
@@ -37,6 +38,7 @@ public:
 	std::any VisitPrint(stmt::Print* stmt) override;
 	std::any VisitVar(stmt::Var* stmt) override;
 	std::any VisitBlock(stmt::Block* stmt) override;
+	std::any VisitIf(stmt::If* stmt) override;
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;

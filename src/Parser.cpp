@@ -21,7 +21,7 @@ std::unique_ptr<expr::Expr> Parser::Expression() {
 
 std::unique_ptr<expr::Expr> Parser::Assignment()
 {
-	std::unique_ptr<expr::Expr> expr = Equality();
+	std::unique_ptr<expr::Expr> expr = Or();
 	if (Match(TokenType::EQUAL)) {
 		const Token& equals = PreviousToken();
 		std::unique_ptr<expr::Expr> value = Assignment();
@@ -33,6 +33,28 @@ std::unique_ptr<expr::Expr> Parser::Assignment()
 		}
 	}
 
+	return expr;
+}
+
+std::unique_ptr<expr::Expr> Parser::Or()
+{
+	std::unique_ptr<expr::Expr> expr = And();
+	while (Match(TokenType::OR)) {
+		const Token& opr = PreviousToken();
+		std::unique_ptr<expr::Expr> right = And();
+		expr = std::make_unique<expr::Logical>(std::move(expr), opr, std::move(right));
+	}
+	return expr;
+}
+
+std::unique_ptr<expr::Expr> Parser::And()
+{
+	std::unique_ptr<expr::Expr> expr = Equality();
+	while (Match(TokenType::AND)) {
+		const Token& opr = PreviousToken();
+		std::unique_ptr<expr::Expr> right = Equality();
+		expr = std::make_unique<expr::Logical>(std::move(expr), opr, std::move(right));
+	}
 	return expr;
 }
 
@@ -110,10 +132,10 @@ std::unique_ptr<expr::Expr> Parser::Primary() {
 		return std::make_unique<expr::Variable>(PreviousToken());
 	if (Match(TokenType::LEFT_PAREN)) {
 		std::unique_ptr<expr::Expr> expr = Expression();
-		Consume(TokenType::RIGHT_PAREN, "Expect ')' after expr::Expression.");
+		Consume(TokenType::RIGHT_PAREN, "Expect ')' after expression.");
 		return std::make_unique<expr::Grouping>(std::move(expr));
 	}
-	throw Error(CurrentToken(), "Expect expr::Expression.");
+	throw Error(CurrentToken(), "Expect expression.");
 }
 
 std::unique_ptr<stmt::Stmt> Parser::Statement()
@@ -122,6 +144,8 @@ std::unique_ptr<stmt::Stmt> Parser::Statement()
 		return PrintStatement();
 	if (Match(TokenType::LEFT_BRACE))
 		return std::make_unique<stmt::Block>(Block());
+	if (Match(TokenType::IF))
+		return IfStatement();
 	return ExpressionStatement();
 }
 
@@ -168,8 +192,20 @@ std::unique_ptr<stmt::Stmt> Parser::PrintStatement()
 std::unique_ptr<stmt::Stmt> Parser::ExpressionStatement()
 {
 	std::unique_ptr<expr::Expr> expr = Expression();
-	Consume(TokenType::SEMICOLON, "Expect ';' after expr::Expression.");
+	Consume(TokenType::SEMICOLON, "Expect ';' after expression.");
 	return std::make_unique<stmt::Expression>(std::move(expr));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::IfStatement()
+{
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after 'if'.");
+	std::unique_ptr<expr::Expr> condition = Expression();
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after if condition.");
+	std::unique_ptr<stmt::Stmt> thenBranch = Statement();
+	std::unique_ptr<stmt::Stmt> elseBranch = nullptr;
+	if (Match(TokenType::ELSE))
+		elseBranch = Statement();
+	return std::make_unique<stmt::If>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
 const Token& Parser::CurrentToken() const

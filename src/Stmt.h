@@ -17,6 +17,23 @@ namespace stmt {
 
 	inline Stmt::~Stmt() = default;
 
+	struct If : public Stmt {
+		If(std::unique_ptr<expr::Expr> condition, std::unique_ptr<stmt::Stmt> thenBranch,
+			std::unique_ptr<stmt::Stmt> elseBranch) :
+			m_Condition(std::move(condition)),
+			m_ThenBranch(std::move(thenBranch)),
+			m_ElseBranch(std::move(elseBranch))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<expr::Expr> m_Condition;
+		std::unique_ptr<stmt::Stmt> m_ThenBranch;
+		std::unique_ptr<stmt::Stmt> m_ElseBranch;
+	};
+
+
+
 	struct Block : public Stmt {
 		Block(std::vector<std::unique_ptr<stmt::Stmt>> statements) :
 			m_Statements(std::move(statements))
@@ -62,6 +79,7 @@ namespace stmt {
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
+		virtual std::any VisitIf(If* stmt) = 0;
 		virtual std::any VisitBlock(Block* stmt) = 0;
 		virtual std::any VisitExpression(Expression* stmt) = 0;
 		virtual std::any VisitPrint(Print* stmt) = 0;
@@ -69,6 +87,10 @@ namespace stmt {
 	};
 
 	inline Visitor::~Visitor() = default;
+
+	inline std::any If::Accept(Visitor& visitor) {
+		return visitor.VisitIf(this);
+	}
 
 	inline std::any Block::Accept(Visitor& visitor) {
 		return visitor.VisitBlock(this);

@@ -77,6 +77,20 @@ std::any Interpreter::VisitBinary(expr::Binary* expr)
 	return nullptr;
 }
 
+std::any Interpreter::VisitLogical(expr::Logical* expr)
+{
+	std::any left = Evaluate(expr->m_Left.get());
+	if (expr->m_Opr.type == TokenType::OR) {
+		if (IsTruthy(left))
+			return left;
+	}
+	else {
+		if (!IsTruthy(left))
+			return left;
+	}
+	return Evaluate(expr->m_Right.get());
+}
+
 std::any Interpreter::VisitGrouping(expr::Grouping* expr)
 {
 	return Evaluate(expr->m_Expression.get());
@@ -135,6 +149,17 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 std::any Interpreter::VisitBlock(stmt::Block* stmt)
 {
 	ExecuteBlock(stmt->m_Statements);
+	return nullptr;
+}
+
+std::any Interpreter::VisitIf(stmt::If* stmt)
+{
+	if (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
+		Execute(stmt->m_ThenBranch.get());
+	}
+	else if (stmt->m_ElseBranch.get() != nullptr) {
+		Execute(stmt->m_ElseBranch.get());
+	}
 	return nullptr;
 }
 
