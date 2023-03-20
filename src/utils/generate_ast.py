@@ -107,6 +107,7 @@ if __name__ == "__main__":
         "Expression ; std::unique_ptr<expr::Expr> expression",
         "If         ; std::unique_ptr<expr::Expr> condition,\
 std::unique_ptr<stmt::Stmt> thenBranch, std::unique_ptr<stmt::Stmt> elseBranch",
+        "While      ; std::unique_ptr<expr::Expr> condition, std::unique_ptr<stmt::Stmt> statement",
         "Print      ; std::unique_ptr<expr::Expr> expression",
         "Var        ; const Token& name, std::unique_ptr<expr::Expr> initializer"   
     ]

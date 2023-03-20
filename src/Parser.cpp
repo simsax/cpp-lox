@@ -146,6 +146,10 @@ std::unique_ptr<stmt::Stmt> Parser::Statement()
 		return std::make_unique<stmt::Block>(Block());
 	if (Match(TokenType::IF))
 		return IfStatement();
+	if (Match(TokenType::WHILE))
+		return WhileStatement();
+	if (Match(TokenType::FOR))
+		return ForStatement();
 	return ExpressionStatement();
 }
 
@@ -206,6 +210,59 @@ std::unique_ptr<stmt::Stmt> Parser::IfStatement()
 	if (Match(TokenType::ELSE))
 		elseBranch = Statement();
 	return std::make_unique<stmt::If>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::WhileStatement()
+{
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after 'while'.");
+	std::unique_ptr<expr::Expr> condition = Expression();
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after while condition.");
+	std::unique_ptr<stmt::Stmt> statement = Statement();
+	return std::make_unique<stmt::While>(std::move(condition), std::move(statement));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::ForStatement()
+{
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after 'for'.");
+	std::unique_ptr<stmt::Stmt> initializer;
+	if (Match(TokenType::SEMICOLON))
+		initializer = nullptr;
+	else if (Match(TokenType::VAR))
+		initializer = VarDeclaration();
+	else
+		initializer = ExpressionStatement();
+	std::unique_ptr<expr::Expr> condition = nullptr;
+	if (CurrentToken().type != TokenType::SEMICOLON)
+		condition = Expression();
+	Consume(TokenType::SEMICOLON, "Expect ';' after loop condition.");
+	std::unique_ptr<expr::Expr> increment = nullptr;
+	if (CurrentToken().type != TokenType::RIGHT_PAREN)
+		increment = Expression();
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after for clauses.");
+	std::unique_ptr<stmt::Stmt> body = Statement();
+
+	if (increment.get() != nullptr) {
+		// https://tristanbrindle.com/posts/beware-copies-initializer-list
+		std::vector<std::unique_ptr<stmt::Stmt>> statements;
+		statements.reserve(2);
+		statements.emplace_back(std::move(body));
+		statements.emplace_back(std::make_unique<stmt::Expression>(std::move(increment)));
+		body = std::make_unique<stmt::Block>(std::move(statements));
+	}
+
+	if (condition.get() == nullptr)
+		condition = std::make_unique<expr::Literal>(true);
+	body = std::make_unique<stmt::While>(std::move(condition), std::move(body));
+
+	if (initializer.get() != nullptr) {
+		std::vector<std::unique_ptr<stmt::Stmt>> statements;
+		statements.reserve(2);
+		statements.emplace_back(std::move(initializer));
+		statements.emplace_back(std::move(body));
+		body = std::make_unique<stmt::Block>(std::move(statements));
+	}
+
+	return std::move(body);
 }
 
 const Token& Parser::CurrentToken() const

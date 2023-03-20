@@ -12,7 +12,11 @@
 program        → declaration* EOF ;
 declaration	   → varDecl | statement ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
-statement      → exprStmt | printStmt | block | ifStmt ;
+statement      → exprStmt | printStmt | block | ifStmt | whileStmt | forStmt ;
+forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
+				 expression? ";"
+				 expression? ")" statement ;
+whileStmt      → "while" "(" expression ")" statement ;
 ifStmt		   → "if" "(" expression ")" statement ( "else" statement )? ;
 exprStmt       → expression ";" ;
 printStmt      → "print" expression ";" ;
@@ -66,6 +70,8 @@ private:
 	std::unique_ptr<stmt::Stmt> PrintStatement();
 	std::unique_ptr<stmt::Stmt> ExpressionStatement();
 	std::unique_ptr<stmt::Stmt> IfStatement();
+	std::unique_ptr<stmt::Stmt> WhileStatement();
+	std::unique_ptr<stmt::Stmt> ForStatement();
 
 	std::vector<std::unique_ptr<stmt::Stmt>> Block();
 

@@ -163,6 +163,13 @@ std::any Interpreter::VisitIf(stmt::If* stmt)
 	return nullptr;
 }
 
+std::any Interpreter::VisitWhile(stmt::While* stmt)
+{
+	while (IsTruthy(Evaluate(stmt->m_Condition.get())))
+		Execute(stmt->m_Statement.get());
+	return nullptr;
+}
+
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
