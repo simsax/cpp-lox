@@ -98,6 +98,20 @@ std::any Interpreter::VisitBinary(expr::Binary* expr)
 	return nullptr;
 }
 
+std::any Interpreter::VisitLogical(expr::Logical* expr)
+{
+	std::any left = Evaluate(expr->m_Left.get());
+	if (expr->m_Opr.type == TokenType::OR) {
+		if (IsTruthy(left))
+			return left;
+	}
+	else {
+		if (!IsTruthy(left))
+			return left;
+	}
+	return Evaluate(expr->m_Right.get());
+}
+
 std::any Interpreter::VisitGrouping(expr::Grouping* expr)
 {
 	return Evaluate(expr->m_Expression.get());
@@ -159,6 +173,63 @@ std::any Interpreter::VisitBlock(stmt::Block* stmt)
 	return nullptr;
 }
 
+std::any Interpreter::VisitIf(stmt::If* stmt)
+{
+	if (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
+		Execute(stmt->m_ThenBranch.get());
+	}
+	else if (stmt->m_ElseBranch.get() != nullptr) {
+		Execute(stmt->m_ElseBranch.get());
+	}
+	return nullptr;
+}
+
+std::any Interpreter::VisitWhile(stmt::While* stmt)
+{
+	while (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
+		try {
+			Execute(stmt->m_Statement.get());
+		}
+		catch (const JumpException& ex) {
+			if (ex.GetToken().type == TokenType::BREAK)
+				break;
+			else
+				continue;
+		}
+	}
+	return nullptr;
+}
+
+std::any Interpreter::VisitFor(stmt::For* stmt)
+{
+	if (stmt->m_Initializer.get() != nullptr) {
+		Execute(stmt->m_Initializer.get());
+	}
+	expr::Expr* increment = stmt->m_Increment.get();
+	while (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
+		try {
+			Execute(stmt->m_Body.get());
+			if (increment != nullptr)
+				Evaluate(increment);
+		}
+		catch (const JumpException& ex) {
+			if (ex.GetToken().type == TokenType::BREAK)
+				break;
+			else {
+				if (increment != nullptr)
+					Evaluate(increment);
+				continue;
+			}
+		}
+	}
+	return nullptr;
+}
+
+std::any Interpreter::VisitJump(stmt::Jump* stmt)
+{
+	throw JumpException(stmt->m_Name);
+}
+
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
@@ -194,6 +265,10 @@ void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& s
 			Execute(statement.get());
 		}
 		m_CurrentEnvironment = previous;
+	}
+	catch (const JumpException& ex) {
+		m_CurrentEnvironment = previous;
+		throw ex;
 	}
 	catch (const RuntimeException& ex) {
 		m_CurrentEnvironment = previous;

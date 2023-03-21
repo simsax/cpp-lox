@@ -28,6 +28,20 @@ namespace expr {
 		std::unique_ptr<Expr> m_Value;
 	};
 
+	struct Logical : public Expr {
+		Logical(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
+			m_Left(std::move(left)),
+			m_Opr(opr),
+			m_Right(std::move(right))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<Expr> m_Left;
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Right;
+	};
+
 	struct Binary : public Expr {
 		Binary(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
 			m_Left(std::move(left)),
@@ -89,6 +103,7 @@ namespace expr {
 		virtual ~Visitor() = 0;
 		virtual std::any VisitAssign(Assign* expr) = 0;
 		virtual std::any VisitBinary(Binary* expr) = 0;
+		virtual std::any VisitLogical(Logical* expr) = 0;
 		virtual std::any VisitGrouping(Grouping* expr) = 0;
 		virtual std::any VisitLiteral(Literal* expr) = 0;
 		virtual std::any VisitUnary(Unary* expr) = 0;
@@ -103,6 +118,10 @@ namespace expr {
 
 	inline std::any Binary::Accept(Visitor& visitor) {
 		return visitor.VisitBinary(this);
+	}
+
+	inline std::any Logical::Accept(Visitor& visitor) {
+		return visitor.VisitLogical(this);
 	}
 
 	inline std::any Grouping::Accept(Visitor& visitor) {

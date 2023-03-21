@@ -17,6 +17,51 @@ namespace stmt {
 
 	inline Stmt::~Stmt() = default;
 
+	struct If : public Stmt {
+		If(std::unique_ptr<expr::Expr> condition, std::unique_ptr<stmt::Stmt> thenBranch,
+			std::unique_ptr<stmt::Stmt> elseBranch) :
+			m_Condition(std::move(condition)),
+			m_ThenBranch(std::move(thenBranch)),
+			m_ElseBranch(std::move(elseBranch))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<expr::Expr> m_Condition;
+		std::unique_ptr<stmt::Stmt> m_ThenBranch;
+		std::unique_ptr<stmt::Stmt> m_ElseBranch;
+	};
+
+	struct While : public Stmt {
+		While(std::unique_ptr<expr::Expr> condition, std::unique_ptr<stmt::Stmt> statement) :
+			m_Condition(std::move(condition)),
+			m_Statement(std::move(statement))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<expr::Expr> m_Condition;
+		std::unique_ptr<stmt::Stmt> m_Statement;
+	};
+
+	struct For : public Stmt {
+		For(std::unique_ptr<stmt::Stmt> initializer, std::unique_ptr<expr::Expr> condition,
+			std::unique_ptr<expr::Expr> increment, std::unique_ptr<stmt::Stmt> body) :
+			m_Initializer(std::move(initializer)),
+			m_Condition(std::move(condition)),
+			m_Increment(std::move(increment)),
+			m_Body(std::move(body))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<stmt::Stmt> m_Initializer;
+		std::unique_ptr<expr::Expr> m_Condition;
+		std::unique_ptr<expr::Expr> m_Increment;
+		std::unique_ptr<stmt::Stmt> m_Body;
+	};
+
+
 	struct Block : public Stmt {
 		Block(std::vector<std::unique_ptr<stmt::Stmt>> statements) :
 			m_Statements(std::move(statements))
@@ -59,6 +104,16 @@ namespace stmt {
 		std::unique_ptr<expr::Expr> m_Initializer;
 	};
 
+	struct Jump : public Stmt {
+		Jump(const Token& name) :
+			m_Name(name)
+		{}
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -66,9 +121,14 @@ namespace stmt {
 		virtual std::any VisitExpression(Expression* stmt) = 0;
 		virtual std::any VisitPrint(Print* stmt) = 0;
 		virtual std::any VisitVar(Var* stmt) = 0;
+		virtual std::any VisitIf(If* stmt) = 0;
+		virtual std::any VisitWhile(While* stmt) = 0;
+		virtual std::any VisitFor(For* stmt) = 0;
+		virtual std::any VisitJump(Jump* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
+
 
 	inline std::any Block::Accept(Visitor& visitor) {
 		return visitor.VisitBlock(this);
@@ -86,4 +146,19 @@ namespace stmt {
 		return visitor.VisitVar(this);
 	}
 
+	inline std::any If::Accept(Visitor& visitor) {
+		return visitor.VisitIf(this);
+	}
+
+	inline std::any While::Accept(Visitor& visitor) {
+		return visitor.VisitWhile(this);
+	}
+
+	inline std::any For::Accept(Visitor& visitor) {
+		return visitor.VisitFor(this);
+	}
+
+	inline std::any Jump::Accept(Visitor& visitor) {
+		return visitor.VisitJump(this);
+	}
 }

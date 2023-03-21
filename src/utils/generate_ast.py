@@ -95,6 +95,7 @@ if __name__ == "__main__":
     exprTypes = [
         "Assign   ; const Token& name, std::unique_ptr<Expr> value",
         "Binary   ; std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right",
+        "Logical   ; std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right",
         "Grouping ; std::unique_ptr<Expr> expression",
         "Literal  ; const std::any& value",
         "Unary    ; const Token& opr, std::unique_ptr<Expr> right",
@@ -104,8 +105,12 @@ if __name__ == "__main__":
     stmtTypes = [
         "Block      ; const std::vector<std::unique_ptr<stmt::Stmt>>& statements",
         "Expression ; std::unique_ptr<expr::Expr> expression",
+        "If         ; std::unique_ptr<expr::Expr> condition,\
+std::unique_ptr<stmt::Stmt> thenBranch, std::unique_ptr<stmt::Stmt> elseBranch",
+        "While      ; std::unique_ptr<expr::Expr> condition, std::unique_ptr<stmt::Stmt> statement",
         "Print      ; std::unique_ptr<expr::Expr> expression",
-        "Var        ; const Token& name, std::unique_ptr<expr::Expr> initializer"   
+        "Var        ; const Token& name, std::unique_ptr<expr::Expr> initializer",
+        "Jump       ; const Token& name"  
     ]
 
     define_ast("Expr", exprTypes)
