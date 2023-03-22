@@ -27,8 +27,10 @@ continueStmt   → "continue" ";" ;
 
 // Expressions
 comma		   → expression ( "," expression )* ;
-expression     → assignment ;
-assignment     → IDENTIFIER "=" assignment | logic_or ;
+expression     → assignment | opr_assignment;
+assignment     → IDENTIFIER "=" assignment | logic_or;
+opr_assignment → IDENTIFIER ( "+=" | "-=" | "*=" | "/=" ) logic_or;
+increment	   → IDENTIFIER "+=" expression ;
 logic_or       → logic_and ( "or" logic_and )* ;
 logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -40,7 +42,7 @@ primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
 
-// TODO: ternary operator
+// TODO: ternary operator, prefix, postfix
 
 template<typename T>
 concept IsTokenType = std::is_same<T, TokenType>::value;
@@ -62,6 +64,7 @@ private:
 	std::unique_ptr<expr::Expr> Expression();
 	std::unique_ptr<expr::Expr> Comma();
 	std::unique_ptr<expr::Expr> Assignment();
+	std::unique_ptr<expr::Expr> OprAssignment();
 	std::unique_ptr<expr::Expr> Or();
 	std::unique_ptr<expr::Expr> And();
 	std::unique_ptr<expr::Expr> Equality();

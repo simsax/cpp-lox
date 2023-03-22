@@ -3,18 +3,19 @@
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_CurrentEnvironment(nullptr)
+	m_CurrentEnvironment(new Environment())
 {
+}
+
+Interpreter::~Interpreter()
+{
+	delete m_CurrentEnvironment;
 }
 
 
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
 	try {
-		// ugly state-machine like solution
-		// the alternative is to pass the environment to each visit method
-		Environment globalEnvironment = Environment();
-		m_CurrentEnvironment = &globalEnvironment;
 		for (const auto& statement : statements) {
 			Execute(statement.get());
 		}
@@ -27,8 +28,6 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 void Interpreter::Interpret(expr::Expr* expression)
 {
 	try {
-		Environment globalEnvironment = Environment();
-		m_CurrentEnvironment = &globalEnvironment;
 		std::any value = Evaluate(expression);
 		std::cout << ToString(value) << "\n";
 	}
@@ -44,6 +43,31 @@ std::any Interpreter::VisitAssign(expr::Assign* expr)
 	return assignmentValue;
 }
 
+std::any Interpreter::VisitOprAssign(expr::OprAssign* expr)
+{
+	std::any variableValue = m_CurrentEnvironment->Get(expr->m_Name);
+	std::any assignmentValue = Evaluate(expr->m_Value.get());
+	switch (expr->m_Opr.type)
+	{
+	case TokenType::MINUS_EQUAL:
+		variableValue = Subtract(expr->m_Opr, variableValue, assignmentValue);
+		break;
+	case TokenType::PLUS_EQUAL:
+		variableValue = Add(expr->m_Opr, variableValue, assignmentValue);
+		break;
+	case TokenType::SLASH_EQUAL:
+		variableValue = Divide(expr->m_Opr, variableValue, assignmentValue);
+		break;
+	case TokenType::STAR_EQUAL:
+		variableValue = Multiply(expr->m_Opr, variableValue, assignmentValue);
+		break;
+	default:
+		break;
+	}
+	m_CurrentEnvironment->Assign(expr->m_Name, variableValue);
+	return variableValue;
+}
+
 std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());
@@ -53,27 +77,13 @@ std::any Interpreter::VisitBinary(expr::Binary* expr)
 	case TokenType::COMMA:
 		return right;
 	case TokenType::MINUS:
-		CheckNumberOperands(expr->m_Opr, left, right);
-		return std::any_cast<double>(left) - std::any_cast<double>(right);
+		return Subtract(expr->m_Opr, left, right);
 	case TokenType::PLUS:
-		if (left.type() == typeid(double) && right.type() == typeid(double))
-			return std::any_cast<double>(left) + std::any_cast<double>(right);
-		else if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
-			return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
-		else if (left.type() == typeid(std::string))
-			return std::any_cast<std::string>(left) + ToString(right);
-		else if (right.type() == typeid(std::string))
-			return ToString(left) + std::any_cast<std::string>(right);
-		else
-			throw RuntimeException("Operands must be two numbers or two strings.", expr->m_Opr);
+		return Add(expr->m_Opr, left, right);
 	case TokenType::SLASH:
-		CheckNumberOperands(expr->m_Opr, left, right);
-		if (std::any_cast<double>(right) == 0)
-			throw DivisionByZeroException("Right operand cannot be zero.", expr->m_Opr);
-		return std::any_cast<double>(left) / std::any_cast<double>(right);
+		return Divide(expr->m_Opr, left, right);
 	case TokenType::STAR:
-		CheckNumberOperands(expr->m_Opr, left, right);
-		return std::any_cast<double>(left) * std::any_cast<double>(right);
+		return Multiply(expr->m_Opr, left, right);
 	case TokenType::GREATER:
 		CheckNumberOperands(expr->m_Opr, left, right);
 		return std::any_cast<double>(left) > std::any_cast<double>(right);
@@ -143,6 +153,7 @@ std::any Interpreter::VisitVariable(expr::Variable* expr)
 {
 	return m_CurrentEnvironment->Get(expr->m_Name);
 }
+
 
 std::any Interpreter::VisitExpression(stmt::Expression* stmt)
 {
@@ -228,6 +239,40 @@ std::any Interpreter::VisitFor(stmt::For* stmt)
 std::any Interpreter::VisitJump(stmt::Jump* stmt)
 {
 	throw JumpException(stmt->m_Name);
+}
+
+std::any Interpreter::Add(const Token& opr, const std::any& left, const std::any& right)
+{
+	if (left.type() == typeid(double) && right.type() == typeid(double))
+		return std::any_cast<double>(left) + std::any_cast<double>(right);
+	else if (left.type() == typeid(std::string) && right.type() == typeid(std::string))
+		return std::any_cast<std::string>(left) + std::any_cast<std::string>(right);
+	else if (left.type() == typeid(std::string))
+		return std::any_cast<std::string>(left) + ToString(right);
+	else if (right.type() == typeid(std::string))
+		return ToString(left) + std::any_cast<std::string>(right);
+	else
+		throw RuntimeException("Operands must be two numbers or two strings.", opr);
+}
+
+std::any Interpreter::Subtract(const Token& opr, const std::any& left, const std::any& right)
+{
+	CheckNumberOperands(opr, left, right);
+	return std::any_cast<double>(left) - std::any_cast<double>(right);
+}
+
+std::any Interpreter::Multiply(const Token& opr, const std::any& left, const std::any& right)
+{
+	CheckNumberOperands(opr, left, right);
+	return std::any_cast<double>(left) * std::any_cast<double>(right);
+}
+
+std::any Interpreter::Divide(const Token& opr, const std::any& left, const std::any& right)
+{
+	CheckNumberOperands(opr, left, right);
+	if (std::any_cast<double>(right) == 0)
+		throw DivisionByZeroException("Right operand cannot be zero.", opr);
+	return std::any_cast<double>(left) / std::any_cast<double>(right);
 }
 
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const

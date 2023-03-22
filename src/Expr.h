@@ -28,6 +28,20 @@ namespace expr {
 		std::unique_ptr<Expr> m_Value;
 	};
 
+	struct OprAssign : public Expr {
+		OprAssign(const Token& name, const Token& opr, std::unique_ptr<Expr> value) :
+			m_Name(name),
+			m_Opr(opr),
+			m_Value(std::move(value))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		Token m_Opr;
+		std::unique_ptr<Expr> m_Value;
+	};
+
 	struct Logical : public Expr {
 		Logical(std::unique_ptr<Expr> left, const Token& opr, std::unique_ptr<Expr> right) :
 			m_Left(std::move(left)),
@@ -108,6 +122,7 @@ namespace expr {
 		virtual std::any VisitLiteral(Literal* expr) = 0;
 		virtual std::any VisitUnary(Unary* expr) = 0;
 		virtual std::any VisitVariable(Variable* expr) = 0;
+		virtual std::any VisitOprAssign(OprAssign* expr) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -140,4 +155,7 @@ namespace expr {
 		return visitor.VisitVariable(this);
 	}
 
+	inline std::any OprAssign::Accept(Visitor& visitor) {
+		return visitor.VisitOprAssign(this);
+	}
 }

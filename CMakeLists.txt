@@ -17,4 +17,5 @@ add_executable(
 	"src/Interpreter.h" 
 	"src/Interpreter.cpp" 
 	"src/Stmt.h"
-	"src/Environment.cpp")
+	"src/Environment.cpp" 
+	)

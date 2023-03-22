@@ -37,6 +37,9 @@ public:
 class Interpreter : public expr::Visitor, public stmt::Visitor {
 public:
 	Interpreter();
+	~Interpreter();
+	Interpreter(const Interpreter&) = delete;
+	Interpreter& operator=(const Interpreter&) = delete;
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 	void Interpret(expr::Expr* expression);
@@ -48,6 +51,7 @@ public:
 	std::any VisitLiteral(expr::Literal* expr) override;
 	std::any VisitUnary(expr::Unary* expr) override;
 	std::any VisitVariable(expr::Variable* expr) override;
+	std::any VisitOprAssign(expr::OprAssign* expr) override;
 
 	std::any VisitExpression(stmt::Expression* stmt) override;
 	std::any VisitPrint(stmt::Print* stmt) override;
@@ -57,6 +61,11 @@ public:
 	std::any VisitWhile(stmt::While* stmt) override;
 	std::any VisitFor(stmt::For* stmt) override;
 	std::any VisitJump(stmt::Jump* stmt) override;
+
+	std::any Add(const Token& opr, const std::any& left, const std::any& right);
+	std::any Subtract(const Token& opr, const std::any& left, const std::any& right);
+	std::any Multiply(const Token& opr, const std::any& left, const std::any& right);
+	std::any Divide(const Token& opr, const std::any& left, const std::any& right);
 
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;

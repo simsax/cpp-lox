@@ -8,6 +8,7 @@
 class Environment {
 public:
 	Environment();
+
 	Environment(Environment* enclosing);
 	void Define(const Token& name, const std::any& value);
 	void Assign(const Token& name, const std::any& value);

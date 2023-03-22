@@ -1,8 +1,10 @@
 #include "Parser.h"
 #include "Lox.h"
 
-Parser::Parser(const std::vector<Token>& tokens) :
-	m_Tokens(tokens), m_Current(0), m_InsideLoop(false)
+Parser::Parser(const std::vector<Token>& tokens)
+	: m_Tokens(tokens)
+	, m_Current(0)
+	, m_InsideLoop(false)
 {
 }
 
@@ -15,9 +17,7 @@ std::vector<std::unique_ptr<stmt::Stmt>> Parser::Parse()
 	return statements;
 }
 
-std::unique_ptr<expr::Expr> Parser::Expression() {
-	return Assignment();
-}
+std::unique_ptr<expr::Expr> Parser::Expression() { return Assignment(); }
 
 std::unique_ptr<expr::Expr> Parser::Assignment()
 {
@@ -30,6 +30,17 @@ std::unique_ptr<expr::Expr> Parser::Assignment()
 		}
 		else {
 			Error(equals, "Invalid assignment target.");
+		}
+	}
+	if (Match(TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
+		TokenType::SLASH_EQUAL)) {
+		const Token& plusEquals = PreviousToken();
+		std::unique_ptr<expr::Expr> value = Or();
+		if (auto var = dynamic_cast<expr::Variable*>(expr.get())) {
+			return std::make_unique<expr::OprAssign>(var->m_Name, plusEquals, std::move(value));
+		}
+		else {
+			Error(plusEquals, "Invalid assignment target.");
 		}
 	}
 	return expr;
@@ -70,7 +81,8 @@ std::unique_ptr<expr::Expr> Parser::And()
 	return expr;
 }
 
-std::unique_ptr<expr::Expr> Parser::Equality() {
+std::unique_ptr<expr::Expr> Parser::Equality()
+{
 	std::unique_ptr<expr::Expr> expr = Comparison();
 
 	while (Match(TokenType::BANG_EQUAL, TokenType::EQUAL_EQUAL)) {
@@ -86,8 +98,8 @@ std::unique_ptr<expr::Expr> Parser::Comparison()
 {
 	std::unique_ptr<expr::Expr> expr = Term();
 
-	while (Match(TokenType::GREATER, TokenType::GREATER_EQUAL,
-		TokenType::LESS, TokenType::LESS_EQUAL)) {
+	while (Match(
+		TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL)) {
 		const Token& opr = PreviousToken();
 		std::unique_ptr<expr::Expr> right = Term();
 		expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
@@ -131,7 +143,8 @@ std::unique_ptr<expr::Expr> Parser::Unary()
 
 	return Primary();
 }
-std::unique_ptr<expr::Expr> Parser::Primary() {
+std::unique_ptr<expr::Expr> Parser::Primary()
+{
 	if (Match(TokenType::FALSE))
 		return std::make_unique<expr::Literal>(false);
 	if (Match(TokenType::TRUE))
@@ -186,7 +199,7 @@ std::unique_ptr<stmt::Stmt> Parser::Declaration()
 	}
 	catch (const ParseException&) {
 		Synchronize();
-		return std::unique_ptr<stmt::Stmt>{};
+		return std::unique_ptr<stmt::Stmt> {};
 	}
 }
 
@@ -223,7 +236,8 @@ std::unique_ptr<stmt::Stmt> Parser::IfStatement()
 	std::unique_ptr<stmt::Stmt> elseBranch = nullptr;
 	if (Match(TokenType::ELSE))
 		elseBranch = Statement();
-	return std::make_unique<stmt::If>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+	return std::make_unique<stmt::If>(
+		std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
 std::unique_ptr<stmt::Stmt> Parser::WhileStatement()
@@ -262,8 +276,8 @@ std::unique_ptr<stmt::Stmt> Parser::ForStatement()
 		condition = std::make_unique<expr::Literal>(true);
 
 	m_InsideLoop = false;
-	return std::make_unique<stmt::For>(std::move(initializer), std::move(condition),
-		std::move(increment), std::move(body));
+	return std::make_unique<stmt::For>(
+		std::move(initializer), std::move(condition), std::move(increment), std::move(body));
 }
 
 std::unique_ptr<stmt::Stmt> Parser::JumpStatement()
@@ -275,20 +289,11 @@ std::unique_ptr<stmt::Stmt> Parser::JumpStatement()
 	return std::make_unique<stmt::Jump>(opr);
 }
 
-const Token& Parser::CurrentToken() const
-{
-	return m_Tokens[m_Current];
-}
+const Token& Parser::CurrentToken() const { return m_Tokens[m_Current]; }
 
-const Token& Parser::PreviousToken() const
-{
-	return m_Tokens[m_Current - 1];
-}
+const Token& Parser::PreviousToken() const { return m_Tokens[m_Current - 1]; }
 
-bool Parser::IsAtEnd() const
-{
-	return CurrentToken().type == TokenType::END;
-}
+bool Parser::IsAtEnd() const { return CurrentToken().type == TokenType::END; }
 
 const Token& Parser::Advance()
 {
@@ -319,8 +324,7 @@ void Parser::Synchronize()
 		if (PreviousToken().type == TokenType::SEMICOLON)
 			return;
 
-		switch (CurrentToken().type)
-		{
+		switch (CurrentToken().type) {
 		case TokenType::CLASS:
 		case TokenType::FUN:
 		case TokenType::VAR:
