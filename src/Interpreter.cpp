@@ -3,18 +3,18 @@
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_CurrentEnvironment(nullptr)
+	m_CurrentEnvironment(new Environment())
 {
 }
 
+Interpreter::~Interpreter()
+{
+	delete m_CurrentEnvironment;
+}
 
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
 	try {
-		// ugly state-machine like solution
-		// the alternative is to pass the environment to each visit method
-		Environment globalEnvironment = Environment();
-		m_CurrentEnvironment = &globalEnvironment;
 		for (const auto& statement : statements) {
 			Execute(statement.get());
 		}

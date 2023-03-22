@@ -23,6 +23,9 @@ private:
 class Interpreter : public expr::Visitor, public stmt::Visitor {
 public:
 	Interpreter();
+	~Interpreter();
+	Interpreter(const Interpreter&) = delete;
+	Interpreter& operator=(const Interpreter&) = delete;
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 
