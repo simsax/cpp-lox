@@ -39,7 +39,6 @@ namespace Lox {
 		m_HadRuntimeError = true;
 	}
 
-	// TODO: fix error check when two literals have no operator between them
 	void Run(const std::string& sourceCode) {
 		Scanner scanner(sourceCode);
 		std::vector<Token> tokens = scanner.ScanTokens();

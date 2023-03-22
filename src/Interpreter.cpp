@@ -213,25 +213,36 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 
 std::any Interpreter::VisitFor(stmt::For* stmt)
 {
-	if (stmt->m_Initializer.get() != nullptr) {
-		Execute(stmt->m_Initializer.get());
-	}
-	expr::Expr* increment = stmt->m_Increment.get();
-	while (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
-		try {
-			Execute(stmt->m_Body.get());
-			if (increment != nullptr)
-				Evaluate(increment);
+	Environment localEnvironment = Environment(m_CurrentEnvironment);
+	Environment* previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = &localEnvironment;
+
+	try {
+		if (stmt->m_Initializer.get() != nullptr) {
+			Execute(stmt->m_Initializer.get());
 		}
-		catch (const JumpException& ex) {
-			if (ex.GetToken().type == TokenType::BREAK)
-				break;
-			else {
+		expr::Expr* increment = stmt->m_Increment.get();
+		while (IsTruthy(Evaluate(stmt->m_Condition.get()))) {
+			try {
+				Execute(stmt->m_Body.get());
 				if (increment != nullptr)
 					Evaluate(increment);
-				continue;
+			}
+			catch (const JumpException& ex) {
+				if (ex.GetToken().type == TokenType::BREAK)
+					break;
+				else {
+					if (increment != nullptr)
+						Evaluate(increment);
+					continue;
+				}
 			}
 		}
+		m_CurrentEnvironment = previous;
+	}
+	catch (const RuntimeException& ex) {
+		m_CurrentEnvironment = previous;
+		throw ex;
 	}
 	return nullptr;
 }
