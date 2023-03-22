@@ -87,6 +87,12 @@ void Scanner::ScanToken() {
 	case ';':
 		AddToken(TokenType::SEMICOLON);
 		break;
+	case ':':
+		AddToken(TokenType::COLON);
+		break;
+	case '?':
+		AddToken(TokenType::QUESTION_MARK);
+		break;
 	case '*':
 		AddToken(Match('=') ? TokenType::STAR_EQUAL : TokenType::STAR);
 		break;

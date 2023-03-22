@@ -52,6 +52,7 @@ public:
 	std::any VisitUnary(expr::Unary* expr) override;
 	std::any VisitVariable(expr::Variable* expr) override;
 	std::any VisitOprAssign(expr::OprAssign* expr) override;
+	std::any VisitTernary(expr::Ternary* expr) override;
 
 	std::any VisitExpression(stmt::Expression* stmt) override;
 	std::any VisitPrint(stmt::Print* stmt) override;

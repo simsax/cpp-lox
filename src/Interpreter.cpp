@@ -68,6 +68,14 @@ std::any Interpreter::VisitOprAssign(expr::OprAssign* expr)
 	return variableValue;
 }
 
+std::any Interpreter::VisitTernary(expr::Ternary* expr)
+{
+	if (IsTruthy(Evaluate(expr->m_Condition.get())))
+		return Evaluate(expr->m_ThenBranch.get());
+	else
+		return Evaluate(expr->m_ElseBranch.get());
+}
+
 std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());

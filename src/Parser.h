@@ -27,10 +27,10 @@ continueStmt   → "continue" ";" ;
 
 // Expressions
 comma		   → expression ( "," expression )* ;
-expression     → assignment | opr_assignment;
-assignment     → IDENTIFIER "=" assignment | logic_or;
-opr_assignment → IDENTIFIER ( "+=" | "-=" | "*=" | "/=" ) logic_or;
-increment	   → IDENTIFIER "+=" expression ;
+expression     → assignment | opr_assignment ;
+assignment     → IDENTIFIER "=" assignment | ternary ;
+opr_assignment → IDENTIFIER ( "+=" | "-=" | "*=" | "/=" ) ternary ;
+ternary		   → logic_or "?" comma ":" ternary | logic_or ;
 logic_or       → logic_and ( "or" logic_and )* ;
 logic_and      → equality ( "and" equality )* ;
 equality       → comparison ( ( "!=" | "==" ) comparison )* ;
@@ -41,8 +41,6 @@ unary          → ( "!" | "-" ) unary | primary ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
-
-// TODO: ternary operator, prefix, postfix
 
 template<typename T>
 concept IsTokenType = std::is_same<T, TokenType>::value;
@@ -73,6 +71,7 @@ private:
 	std::unique_ptr<expr::Expr> Factor();
 	std::unique_ptr<expr::Expr> Unary();
 	std::unique_ptr<expr::Expr> Primary();
+	std::unique_ptr<expr::Expr> Ternary();
 
 	std::unique_ptr<stmt::Stmt> Statement();
 	std::unique_ptr<stmt::Stmt> Declaration();

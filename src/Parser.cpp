@@ -21,7 +21,7 @@ std::unique_ptr<expr::Expr> Parser::Expression() { return Assignment(); }
 
 std::unique_ptr<expr::Expr> Parser::Assignment()
 {
-	std::unique_ptr<expr::Expr> expr = Or();
+	std::unique_ptr<expr::Expr> expr = Ternary();
 	if (Match(TokenType::EQUAL)) {
 		const Token& equals = PreviousToken();
 		std::unique_ptr<expr::Expr> value = Assignment();
@@ -35,7 +35,7 @@ std::unique_ptr<expr::Expr> Parser::Assignment()
 	if (Match(TokenType::PLUS_EQUAL, TokenType::MINUS_EQUAL, TokenType::STAR_EQUAL,
 		TokenType::SLASH_EQUAL)) {
 		const Token& plusEquals = PreviousToken();
-		std::unique_ptr<expr::Expr> value = Or();
+		std::unique_ptr<expr::Expr> value = Ternary();
 		if (auto var = dynamic_cast<expr::Variable*>(expr.get())) {
 			return std::make_unique<expr::OprAssign>(var->m_Name, plusEquals, std::move(value));
 		}
@@ -163,6 +163,7 @@ std::unique_ptr<expr::Expr> Parser::Primary()
 	throw Error(CurrentToken(), "Expect expression.");
 }
 
+
 std::unique_ptr<stmt::Stmt> Parser::Statement()
 {
 	if (Match(TokenType::PRINT))
@@ -238,6 +239,25 @@ std::unique_ptr<stmt::Stmt> Parser::IfStatement()
 		elseBranch = Statement();
 	return std::make_unique<stmt::If>(
 		std::move(condition), std::move(thenBranch), std::move(elseBranch));
+}
+
+std::unique_ptr<expr::Expr> Parser::Ternary()
+{
+	std::unique_ptr<expr::Expr> condition = Or();
+	if (Match(TokenType::QUESTION_MARK)) {
+		const Token& opr = PreviousToken();
+		std::unique_ptr<expr::Expr> thenExpr = Comma();
+		if (Match(TokenType::COLON)) {
+			std::unique_ptr<expr::Expr> elseExpr = Ternary();
+			return std::make_unique<expr::Ternary>(
+				std::move(condition), std::move(thenExpr), std::move(elseExpr));
+		}
+		else {
+			Error(opr, "Expect ':' after '?'.");
+		}
+	}
+
+	return condition;
 }
 
 std::unique_ptr<stmt::Stmt> Parser::WhileStatement()

@@ -112,6 +112,21 @@ namespace expr {
 		Token m_Name;
 	};
 
+	struct Ternary : public Expr {
+		Ternary(std::unique_ptr<expr::Expr> condition, std::unique_ptr<expr::Expr> thenBranch,
+			std::unique_ptr<expr::Expr> elseBranch) :
+			m_Condition(std::move(condition)),
+			m_ThenBranch(std::move(thenBranch)),
+			m_ElseBranch(std::move(elseBranch))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::unique_ptr<expr::Expr> m_Condition;
+		std::unique_ptr<expr::Expr> m_ThenBranch;
+		std::unique_ptr<expr::Expr> m_ElseBranch;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -123,6 +138,7 @@ namespace expr {
 		virtual std::any VisitUnary(Unary* expr) = 0;
 		virtual std::any VisitVariable(Variable* expr) = 0;
 		virtual std::any VisitOprAssign(OprAssign* expr) = 0;
+		virtual std::any VisitTernary(Ternary* expr) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -157,5 +173,9 @@ namespace expr {
 
 	inline std::any OprAssign::Accept(Visitor& visitor) {
 		return visitor.VisitOprAssign(this);
+	}
+
+	inline std::any Ternary::Accept(Visitor& visitor) {
+		return visitor.VisitTernary(this);
 	}
 }
