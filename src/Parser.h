@@ -31,7 +31,9 @@ equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary | primary ;
+unary          → ( "!" | "-" ) unary | call ;
+call           → primary ( "(" arguments? ")" )* ;
+arguments	   → expression ("," expression)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
@@ -63,6 +65,8 @@ private:
 	std::unique_ptr<expr::Expr> Factor();
 	std::unique_ptr<expr::Expr> Unary();
 	std::unique_ptr<expr::Expr> Primary();
+	std::unique_ptr<expr::Expr> Call();
+	std::unique_ptr<expr::Expr> FinishCall(std::unique_ptr<expr::Expr> expr);
 
 	std::unique_ptr<stmt::Stmt> Statement();
 	std::unique_ptr<stmt::Stmt> Declaration();

@@ -14,9 +14,9 @@ Environment::Environment(Environment* enclosing) :
 {
 }
 
-void Environment::Define(const Token& name, const std::any& value)
+void Environment::Define(const std::string& name, const std::any& value)
 {
-	m_Variables[name.lexeme] = value;
+	m_Variables[name] = value;
 }
 
 void Environment::Assign(const Token& name, const std::any& value)

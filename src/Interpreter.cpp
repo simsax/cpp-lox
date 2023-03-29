@@ -1,15 +1,19 @@
 #include "Interpreter.h"
 #include "Lox.h"
+#include "LoxCallable.h"
+#include "Clock.h"
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_CurrentEnvironment(new Environment())
+	m_Globals(new Environment()), m_CurrentEnvironment(m_Globals)
 {
+	// std::any can hold only copy constructible types -> no unique_ptr...
+	m_Globals->Define("clock", static_cast<std::shared_ptr<LoxCallable>>(std::make_shared<Clock>()));
 }
 
 Interpreter::~Interpreter()
 {
-	delete m_CurrentEnvironment;
+	delete m_Globals;
 }
 
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
@@ -123,6 +127,29 @@ std::any Interpreter::VisitVariable(expr::Variable* expr)
 	return m_CurrentEnvironment->Get(expr->m_Name);
 }
 
+std::any Interpreter::VisitCall(expr::Call* expr)
+{
+	std::any callee = Evaluate(expr->m_Callee.get());
+	std::vector<std::any> arguments;
+	arguments.reserve(expr->m_Arguments.size());
+
+	for (const auto& argument : expr->m_Arguments) {
+		arguments.emplace_back(Evaluate(argument.get()));
+	}
+
+	if (callee.type() == typeid(std::shared_ptr<LoxCallable>)) {
+		std::shared_ptr<LoxCallable> function = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
+		if (arguments.size() != function->Arity()) {
+			throw RuntimeException("Expected " + std::to_string(function->Arity())
+				+ " arguments but got " + std::to_string(arguments.size()) + ".", expr->m_Paren);
+		}
+		return function->Call(*this, arguments);
+	}
+	else {
+		throw RuntimeException("Can only call function and classes.", expr->m_Paren);
+	}
+}
+
 std::any Interpreter::VisitExpression(stmt::Expression* stmt)
 {
 	Evaluate(stmt->m_Expression.get());
@@ -142,7 +169,7 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 	expr::Expr* initializer = stmt->m_Initializer.get();
 	if (initializer != nullptr)
 		value = Evaluate(initializer);
-	m_CurrentEnvironment->Define(stmt->m_Name, value);
+	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, std::move(value));
 	return nullptr;
 }
 
@@ -256,6 +283,9 @@ std::string Interpreter::ToString(const std::any& value) const
 	}
 	else if (value.type() == typeid(nullptr)) {
 		return "nil";
+	}
+	else if (value.type() == typeid(std::shared_ptr<LoxCallable>)) {
+		return "<callable object>";
 	}
 	else {
 		return std::any_cast<std::string>(value);

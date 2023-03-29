@@ -36,6 +36,7 @@ public:
 	std::any VisitLiteral(expr::Literal* expr) override;
 	std::any VisitUnary(expr::Unary* expr) override;
 	std::any VisitVariable(expr::Variable* expr) override;
+	std::any VisitCall(expr::Call* expr) override;
 
 	std::any VisitExpression(stmt::Expression* stmt) override;
 	std::any VisitPrint(stmt::Print* stmt) override;
@@ -55,5 +56,6 @@ private:
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
 
+	Environment* m_Globals;
 	Environment* m_CurrentEnvironment;
 };
