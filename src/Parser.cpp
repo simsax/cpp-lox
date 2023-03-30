@@ -199,6 +199,8 @@ std::unique_ptr<stmt::Stmt> Parser::Declaration()
 	try {
 		if (Match(TokenType::VAR))
 			return VarDeclaration();
+		if (Match(TokenType::FUN))
+			return Function("Function");
 		return Statement();
 	}
 	catch (const ParseException&) {
@@ -294,6 +296,26 @@ std::unique_ptr<stmt::Stmt> Parser::ForStatement()
 	}
 
 	return std::move(body);
+}
+
+std::unique_ptr<stmt::Stmt> Parser::Function(const std::string& kind)
+{
+	const Token& name = Consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
+	std::vector<Token> params;
+	if (CurrentToken().type != TokenType::RIGHT_PAREN) {
+		do {
+			if (params.size() >= 255) {
+				Error(CurrentToken(), "Can't have more than 255 parameters.");
+			}
+			Token param = Consume(TokenType::IDENTIFIER, "Expect parameter name.");
+			params.emplace_back(std::move(param));
+		} while (Match(TokenType::COMMA));
+	}
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+	Consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+	std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
+	return std::make_unique<stmt::Function>(name, std::move(params), std::move(body));
 }
 
 const Token& Parser::CurrentToken() const

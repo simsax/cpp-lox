@@ -86,6 +86,22 @@ namespace stmt {
 		std::unique_ptr<expr::Expr> m_Initializer;
 	};
 
+	struct Function : public Stmt {
+		Function(const Token& name,
+			const std::vector<Token> params,
+			std::vector<std::unique_ptr<stmt::Stmt>> body) :
+			m_Name(name),
+			m_Params(params),
+			m_Body(std::move(body))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		std::vector<Token> m_Params;
+		std::vector<std::unique_ptr<stmt::Stmt>> m_Body;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -95,6 +111,7 @@ namespace stmt {
 		virtual std::any VisitVar(Var* stmt) = 0;
 		virtual std::any VisitIf(If* stmt) = 0;
 		virtual std::any VisitWhile(While* stmt) = 0;
+		virtual std::any VisitFunction(Function* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -122,5 +139,9 @@ namespace stmt {
 
 	inline std::any While::Accept(Visitor& visitor) {
 		return visitor.VisitWhile(this);
+	}
+
+	inline std::any Function::Accept(Visitor& visitor) {
+		return visitor.VisitFunction(this);
 	}
 }

@@ -44,6 +44,7 @@ public:
 	std::any VisitBlock(stmt::Block* stmt) override;
 	std::any VisitIf(stmt::If* stmt) override;
 	std::any VisitWhile(stmt::While* stmt) override;
+	std::any VisitFunction(stmt::Function* function) override;
 
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;

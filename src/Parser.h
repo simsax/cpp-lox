@@ -10,7 +10,10 @@
 /*
 // Statements
 program        → declaration* EOF ;
-declaration	   → varDecl | statement ;
+declaration	   → varDecl | statement | funDecl ;
+funDecl		   → "fun" function ;
+function	   → IDENTIFIER "(" parameters? ")" block ;
+parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 statement      → exprStmt | printStmt | block | ifStmt | whileStmt | forStmt ;
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
@@ -76,6 +79,7 @@ private:
 	std::unique_ptr<stmt::Stmt> IfStatement();
 	std::unique_ptr<stmt::Stmt> WhileStatement();
 	std::unique_ptr<stmt::Stmt> ForStatement();
+	std::unique_ptr<stmt::Stmt> Function(const std::string& kind);
 
 	std::vector<std::unique_ptr<stmt::Stmt>> Block();
 

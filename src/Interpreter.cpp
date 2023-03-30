@@ -197,6 +197,11 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 	return nullptr;
 }
 
+std::any Interpreter::VisitFunction(stmt::Function* function)
+{
+	return std::any();
+}
+
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
