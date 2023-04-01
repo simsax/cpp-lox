@@ -88,7 +88,7 @@ namespace stmt {
 
 	struct Function : public Stmt {
 		Function(const Token& name,
-			const std::vector<Token> params,
+			const std::vector<Token>& params,
 			std::vector<std::unique_ptr<stmt::Stmt>> body) :
 			m_Name(name),
 			m_Params(params),

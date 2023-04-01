@@ -4,6 +4,7 @@
 #include "Expr.h"
 #include "Stmt.h"
 #include "Environment.h"
+#include "LoxFunction.h"
 
 class RuntimeException : public std::runtime_error {
 public:
@@ -46,6 +47,7 @@ public:
 	std::any VisitWhile(stmt::While* stmt) override;
 	std::any VisitFunction(stmt::Function* function) override;
 
+	friend class LoxFunction;
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;
@@ -53,7 +55,8 @@ private:
 
 	std::any Evaluate(expr::Expr* expr);
 	void Execute(stmt::Stmt* statement);
-	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
+	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
+		Environment&& environment);
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
 

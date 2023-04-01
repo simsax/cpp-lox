@@ -1,7 +1,7 @@
 #include "Interpreter.h"
 #include "Lox.h"
-#include "LoxCallable.h"
 #include "Clock.h"
+#include "LoxCallable.h"
 #include <regex>
 
 Interpreter::Interpreter() :
@@ -175,7 +175,7 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 
 std::any Interpreter::VisitBlock(stmt::Block* stmt)
 {
-	ExecuteBlock(stmt->m_Statements);
+	ExecuteBlock(stmt->m_Statements, Environment(m_CurrentEnvironment));
 	return nullptr;
 }
 
@@ -199,7 +199,9 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 
 std::any Interpreter::VisitFunction(stmt::Function* function)
 {
-	return std::any();
+	std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(function);
+	m_CurrentEnvironment->Define(function->m_Name.lexeme, loxFunction);
+	return nullptr;
 }
 
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
@@ -226,11 +228,11 @@ void Interpreter::Execute(stmt::Stmt* statement)
 	statement->Accept(*this);
 }
 
-void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
+void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
+	Environment&& environment)
 {
-	Environment localEnvironment = Environment(m_CurrentEnvironment);
 	Environment* previous = m_CurrentEnvironment;
-	m_CurrentEnvironment = &localEnvironment;
+	m_CurrentEnvironment = &environment;
 
 	try {
 		for (const auto& statement : statements) {
@@ -290,7 +292,8 @@ std::string Interpreter::ToString(const std::any& value) const
 		return "nil";
 	}
 	else if (value.type() == typeid(std::shared_ptr<LoxCallable>)) {
-		return "<callable object>";
+		std::shared_ptr<LoxCallable> val = std::any_cast<std::shared_ptr<LoxCallable>>(value);
+		return val->ToString();
 	}
 	else {
 		return std::any_cast<std::string>(value);
