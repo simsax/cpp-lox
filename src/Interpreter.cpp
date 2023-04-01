@@ -5,15 +5,10 @@
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_Globals(new Environment()), m_CurrentEnvironment(m_Globals)
+	m_Globals(std::make_shared<Environment>()), m_CurrentEnvironment(m_Globals)
 {
 	// std::any can hold only copy constructible types -> no unique_ptr...
 	m_Globals->Define("clock", static_cast<std::shared_ptr<LoxCallable>>(std::make_shared<Clock>()));
-}
-
-Interpreter::~Interpreter()
-{
-	delete m_Globals;
 }
 
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
@@ -175,7 +170,7 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 
 std::any Interpreter::VisitBlock(stmt::Block* stmt)
 {
-	ExecuteBlock(stmt->m_Statements, Environment(m_CurrentEnvironment));
+	ExecuteBlock(stmt->m_Statements, std::make_shared<Environment>(m_CurrentEnvironment));
 	return nullptr;
 }
 
@@ -197,11 +192,19 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 	return nullptr;
 }
 
-std::any Interpreter::VisitFunction(stmt::Function* function)
+std::any Interpreter::VisitFunction(stmt::Function* stmt)
 {
-	std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(function);
-	m_CurrentEnvironment->Define(function->m_Name.lexeme, loxFunction);
+	std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(stmt, m_CurrentEnvironment);
+	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
 	return nullptr;
+}
+
+std::any Interpreter::VisitReturn(stmt::Return* stmt)
+{
+	std::any value = nullptr;
+	if (stmt->m_Expression.get() != nullptr)
+		value = Evaluate(stmt->m_Expression.get());
+	throw Return(value);
 }
 
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
@@ -229,16 +232,20 @@ void Interpreter::Execute(stmt::Stmt* statement)
 }
 
 void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
-	Environment&& environment)
+	std::shared_ptr<Environment> environment)
 {
-	Environment* previous = m_CurrentEnvironment;
-	m_CurrentEnvironment = &environment;
+	std::shared_ptr<Environment> previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = environment;
 
 	try {
 		for (const auto& statement : statements) {
 			Execute(statement.get());
 		}
 		m_CurrentEnvironment = previous;
+	}
+	catch (const Return& returnValue) {
+		m_CurrentEnvironment = previous;
+		throw returnValue;
 	}
 	catch (const RuntimeException& ex) {
 		m_CurrentEnvironment = previous;

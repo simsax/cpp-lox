@@ -21,12 +21,24 @@ private:
 	Token m_Token;
 };
 
+class Return : public std::runtime_error {
+public:
+	Return(const std::any& value) :
+		std::runtime_error(""), m_Value(value)
+	{
+	}
+
+	inline std::any GetValue() const {
+		return m_Value;
+	}
+
+private:
+	std::any m_Value;
+};
+
 class Interpreter : public expr::Visitor, public stmt::Visitor {
 public:
 	Interpreter();
-	~Interpreter();
-	Interpreter(const Interpreter&) = delete;
-	Interpreter& operator=(const Interpreter&) = delete;
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 
@@ -45,7 +57,8 @@ public:
 	std::any VisitBlock(stmt::Block* stmt) override;
 	std::any VisitIf(stmt::If* stmt) override;
 	std::any VisitWhile(stmt::While* stmt) override;
-	std::any VisitFunction(stmt::Function* function) override;
+	std::any VisitFunction(stmt::Function* stmt) override;
+	std::any VisitReturn(stmt::Return* stmt) override;
 
 	friend class LoxFunction;
 private:
@@ -56,10 +69,10 @@ private:
 	std::any Evaluate(expr::Expr* expr);
 	void Execute(stmt::Stmt* statement);
 	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
-		Environment&& environment);
+		std::shared_ptr<Environment> environment);
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
 
-	Environment* m_Globals;
-	Environment* m_CurrentEnvironment;
+	std::shared_ptr<Environment> m_Globals;
+	std::shared_ptr<Environment> m_CurrentEnvironment;
 };

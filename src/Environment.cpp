@@ -8,9 +8,9 @@ Environment::Environment() :
 {
 }
 
-Environment::Environment(Environment* enclosing) :
+Environment::Environment(std::shared_ptr<Environment> enclosing) :
 	m_Variables({}),
-	m_Enclosing(enclosing)
+	m_Enclosing(std::move(enclosing))
 {
 }
 

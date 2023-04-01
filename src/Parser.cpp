@@ -181,6 +181,8 @@ std::unique_ptr<stmt::Stmt> Parser::Statement()
 		return WhileStatement();
 	if (Match(TokenType::FOR))
 		return ForStatement();
+	if (Match(TokenType::RETURN))
+		return ReturnStatement();
 	return ExpressionStatement();
 }
 
@@ -316,6 +318,16 @@ std::unique_ptr<stmt::Stmt> Parser::Function(const std::string& kind)
 	Consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
 	std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
 	return std::make_unique<stmt::Function>(name, std::move(params), std::move(body));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::ReturnStatement()
+{
+	const Token& keyword = PreviousToken();
+	std::unique_ptr<expr::Expr> value = nullptr;
+	if (CurrentToken().type != TokenType::SEMICOLON)
+		value = Expression();
+	Consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+	return std::make_unique<stmt::Return>(keyword, std::move(value));
 }
 
 const Token& Parser::CurrentToken() const

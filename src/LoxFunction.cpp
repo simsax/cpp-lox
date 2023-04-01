@@ -1,21 +1,25 @@
 #include "LoxFunction.h"
-#include "Environment.h"
 #include "Interpreter.h"
 
-LoxFunction::LoxFunction(stmt::Function* declaration) :
-	m_Declaration(declaration)
+LoxFunction::LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure) :
+	m_Declaration(declaration), m_Closure(std::move(closure))
 {
 }
 
 std::any LoxFunction::Call(Interpreter& interpreter,
 	const std::vector<std::any>& arguments)
 {
-	Environment functionEnvironment = Environment(interpreter.m_Globals);
+	std::shared_ptr<Environment> functionEnvironment = std::make_shared<Environment>(m_Closure);
 	for (uint32_t i = 0; i < arguments.size(); i++) {
-		functionEnvironment.Define(m_Declaration->m_Params[i].lexeme, arguments[i]);
+		functionEnvironment->Define(m_Declaration->m_Params[i].lexeme, arguments[i]);
 	}
 
-	interpreter.ExecuteBlock(std::move(m_Declaration->m_Body), std::move(functionEnvironment));
+	try {
+		interpreter.ExecuteBlock(std::move(m_Declaration->m_Body), functionEnvironment);
+	}
+	catch (const Return& returnValue) {
+		return returnValue.GetValue();
+	}
 	return nullptr;
 }
 

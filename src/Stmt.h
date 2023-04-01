@@ -102,6 +102,17 @@ namespace stmt {
 		std::vector<std::unique_ptr<stmt::Stmt>> m_Body;
 	};
 
+	struct Return : public Stmt {
+		Return(const Token& keyword, std::unique_ptr<expr::Expr> expression) :
+			m_Keyword(keyword), m_Expression(std::move(expression))
+		{}
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Keyword;
+		std::unique_ptr<expr::Expr> m_Expression;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -112,6 +123,7 @@ namespace stmt {
 		virtual std::any VisitIf(If* stmt) = 0;
 		virtual std::any VisitWhile(While* stmt) = 0;
 		virtual std::any VisitFunction(Function* stmt) = 0;
+		virtual std::any VisitReturn(Return* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -143,5 +155,9 @@ namespace stmt {
 
 	inline std::any Function::Accept(Visitor& visitor) {
 		return visitor.VisitFunction(this);
+	}
+
+	inline std::any Return::Accept(Visitor& visitor) {
+		return visitor.VisitReturn(this);
 	}
 }
