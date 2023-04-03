@@ -141,7 +141,7 @@ std::unique_ptr<expr::Expr> Parser::Unary()
 		return std::make_unique<expr::Unary>(opr, Unary());
 	}
 
-	return Primary();
+	return Call();
 }
 std::unique_ptr<expr::Expr> Parser::Primary()
 {
@@ -163,6 +163,36 @@ std::unique_ptr<expr::Expr> Parser::Primary()
 	throw Error(CurrentToken(), "Expect expression.");
 }
 
+std::unique_ptr<expr::Expr> Parser::Call()
+{
+	std::unique_ptr<expr::Expr> expr = Primary();
+	while (true) {
+		if (Match(TokenType::LEFT_PAREN)) {
+			expr = FinishCall(std::move(expr));
+		}
+		else {
+			break;
+		}
+	}
+	return expr;
+}
+
+std::unique_ptr<expr::Expr> Parser::FinishCall(std::unique_ptr<expr::Expr> expr)
+{
+	std::vector<std::unique_ptr<expr::Expr>> arguments;
+
+	if (!(CurrentToken().type == TokenType::RIGHT_PAREN)) {
+		do {
+			if (arguments.size() >= 255) {
+				Error(CurrentToken(), "Can't have more than 255 arguments.");
+			}
+			arguments.emplace_back(Expression());
+		} while (Match(TokenType::COMMA));
+	}
+	const Token& paren = Consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
+
+	return std::make_unique<expr::Call>(std::move(expr), paren, std::move(arguments));
+}
 
 std::unique_ptr<stmt::Stmt> Parser::Statement()
 {
@@ -176,6 +206,8 @@ std::unique_ptr<stmt::Stmt> Parser::Statement()
 		return WhileStatement();
 	if (Match(TokenType::FOR))
 		return ForStatement();
+	if (Match(TokenType::RETURN))
+		return ReturnStatement();
 	if (Match(TokenType::BREAK, TokenType::CONTINUE))
 		return JumpStatement();
 	return ExpressionStatement();
@@ -196,6 +228,8 @@ std::unique_ptr<stmt::Stmt> Parser::Declaration()
 	try {
 		if (Match(TokenType::VAR))
 			return VarDeclaration();
+		if (Match(TokenType::FUN))
+			return Function("Function");
 		return Statement();
 	}
 	catch (const ParseException&) {
@@ -298,6 +332,36 @@ std::unique_ptr<stmt::Stmt> Parser::ForStatement()
 	m_InsideLoop = false;
 	return std::make_unique<stmt::For>(
 		std::move(initializer), std::move(condition), std::move(increment), std::move(body));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::Function(const std::string& kind)
+{
+	const Token& name = Consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
+	std::vector<Token> params;
+	if (CurrentToken().type != TokenType::RIGHT_PAREN) {
+		do {
+			if (params.size() >= 255) {
+				Error(CurrentToken(), "Can't have more than 255 parameters.");
+			}
+			Token param = Consume(TokenType::IDENTIFIER, "Expect parameter name.");
+			params.emplace_back(std::move(param));
+		} while (Match(TokenType::COMMA));
+	}
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+	Consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
+	std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
+	return std::make_unique<stmt::Function>(name, std::move(params), std::move(body));
+}
+
+std::unique_ptr<stmt::Stmt> Parser::ReturnStatement()
+{
+	const Token& keyword = PreviousToken();
+	std::unique_ptr<expr::Expr> value = nullptr;
+	if (CurrentToken().type != TokenType::SEMICOLON)
+		value = Expression();
+	Consume(TokenType::SEMICOLON, "Expect ';' after return value.");
+	return std::make_unique<stmt::Return>(keyword, std::move(value));
 }
 
 std::unique_ptr<stmt::Stmt> Parser::JumpStatement()

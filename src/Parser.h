@@ -10,10 +10,13 @@
 /*
 // Statements
 program        → declaration* EOF ;
-declaration	   → varDecl | statement ;
+declaration	   → varDecl | statement | funDecl ;
+funDecl		   → "fun" function ;
+function	   → IDENTIFIER "(" parameters? ")" block ;
+parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
 varDecl        → "var" IDENTIFIER ( "=" expression )? ";" ;
 statement      → exprStmt | printStmt | blockStmt | ifStmt | whileStmt | forStmt |
-				breakStmt | continueStmt;
+				breakStmt | continueStmt | returnStmt;
 forStmt        → "for" "(" ( varDecl | exprStmt | ";" )
 				 expression? ";"
 				 expression? ")" statement ;
@@ -24,6 +27,8 @@ printStmt      → "print" expression ";" ;
 blockStmt      → "{" declaration* "}" ;
 breakStmt	   → "break" ";" ;
 continueStmt   → "continue" ";" ;
+block          → "{" declaration* "}" ;
+returnStmt	   → "return" expression? ";" ;
 
 // Expressions
 comma		   → expression ( "," expression )* ;
@@ -37,7 +42,9 @@ equality       → comparison ( ( "!=" | "==" ) comparison )* ;
 comparison     → term ( ( ">" | ">=" | "<" | "<=" ) term )* ;
 term           → factor ( ( "-" | "+" ) factor )* ;
 factor         → unary ( ( "/" | "*" ) unary )* ;
-unary          → ( "!" | "-" ) unary | primary ;
+unary          → ( "!" | "-" ) unary | call ;
+call           → primary ( "(" arguments? ")" )* ;
+arguments	   → expression ("," expression)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
@@ -72,6 +79,8 @@ private:
 	std::unique_ptr<expr::Expr> Unary();
 	std::unique_ptr<expr::Expr> Primary();
 	std::unique_ptr<expr::Expr> Ternary();
+	std::unique_ptr<expr::Expr> Call();
+	std::unique_ptr<expr::Expr> FinishCall(std::unique_ptr<expr::Expr> expr);
 
 	std::unique_ptr<stmt::Stmt> Statement();
 	std::unique_ptr<stmt::Stmt> Declaration();
@@ -81,6 +90,8 @@ private:
 	std::unique_ptr<stmt::Stmt> IfStatement();
 	std::unique_ptr<stmt::Stmt> WhileStatement();
 	std::unique_ptr<stmt::Stmt> ForStatement();
+	std::unique_ptr<stmt::Stmt> Function(const std::string& kind);
+	std::unique_ptr<stmt::Stmt> ReturnStatement();
 	std::unique_ptr<stmt::Stmt> JumpStatement();
 
 	std::vector<std::unique_ptr<stmt::Stmt>> Block();

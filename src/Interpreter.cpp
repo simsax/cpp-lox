@@ -1,17 +1,15 @@
 #include "Interpreter.h"
 #include "Lox.h"
+#include "Clock.h"
+#include "LoxCallable.h"
 #include <regex>
 
 Interpreter::Interpreter() :
-	m_CurrentEnvironment(new Environment())
+	m_Globals(std::make_shared<Environment>()), m_CurrentEnvironment(m_Globals)
 {
+	// std::any can hold only copy constructible types -> no unique_ptr...
+	m_Globals->Define("clock", static_cast<std::shared_ptr<LoxCallable>>(std::make_shared<Clock>()));
 }
-
-Interpreter::~Interpreter()
-{
-	delete m_CurrentEnvironment;
-}
-
 
 void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
@@ -162,6 +160,28 @@ std::any Interpreter::VisitVariable(expr::Variable* expr)
 	return m_CurrentEnvironment->Get(expr->m_Name);
 }
 
+std::any Interpreter::VisitCall(expr::Call* expr)
+{
+	std::any callee = Evaluate(expr->m_Callee.get());
+	std::vector<std::any> arguments;
+	arguments.reserve(expr->m_Arguments.size());
+
+	for (const auto& argument : expr->m_Arguments) {
+		arguments.emplace_back(Evaluate(argument.get()));
+	}
+
+	if (callee.type() == typeid(std::shared_ptr<LoxCallable>)) {
+		std::shared_ptr<LoxCallable> function = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
+		if (arguments.size() != function->Arity()) {
+			throw RuntimeException("Expected " + std::to_string(function->Arity())
+				+ " arguments but got " + std::to_string(arguments.size()) + ".", expr->m_Paren);
+		}
+		return function->Call(*this, arguments);
+	}
+	else {
+		throw RuntimeException("Can only call function and classes.", expr->m_Paren);
+	}
+}
 
 std::any Interpreter::VisitExpression(stmt::Expression* stmt)
 {
@@ -182,13 +202,13 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 	expr::Expr* initializer = stmt->m_Initializer.get();
 	if (initializer != nullptr)
 		value = Evaluate(initializer);
-	m_CurrentEnvironment->Define(stmt->m_Name, value);
+	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, std::move(value));
 	return nullptr;
 }
 
 std::any Interpreter::VisitBlock(stmt::Block* stmt)
 {
-	ExecuteBlock(stmt->m_Statements);
+	ExecuteBlock(stmt->m_Statements, std::make_shared<Environment>(m_CurrentEnvironment));
 	return nullptr;
 }
 
@@ -221,9 +241,9 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 
 std::any Interpreter::VisitFor(stmt::For* stmt)
 {
-	Environment localEnvironment = Environment(m_CurrentEnvironment);
-	Environment* previous = m_CurrentEnvironment;
-	m_CurrentEnvironment = &localEnvironment;
+	std::shared_ptr<Environment> localEnvironment = std::make_shared<Environment>(m_CurrentEnvironment);
+	std::shared_ptr<Environment> previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = localEnvironment;
 
 	try {
 		if (stmt->m_Initializer.get() != nullptr) {
@@ -252,6 +272,13 @@ std::any Interpreter::VisitFor(stmt::For* stmt)
 		m_CurrentEnvironment = previous;
 		throw ex;
 	}
+	return nullptr;
+}
+
+std::any Interpreter::VisitFunction(stmt::Function* stmt)
+{
+	std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(stmt, m_CurrentEnvironment);
+	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
 	return nullptr;
 }
 
@@ -294,6 +321,14 @@ std::any Interpreter::Divide(const Token& opr, const std::any& left, const std::
 	return std::any_cast<double>(left) / std::any_cast<double>(right);
 }
 
+std::any Interpreter::VisitReturn(stmt::Return* stmt)
+{
+	std::any value = nullptr;
+	if (stmt->m_Expression.get() != nullptr)
+		value = Evaluate(stmt->m_Expression.get());
+	throw Return(value);
+}
+
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
 {
 	if (operand.type() == typeid(double))
@@ -318,17 +353,21 @@ void Interpreter::Execute(stmt::Stmt* statement)
 	statement->Accept(*this);
 }
 
-void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
+void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
+	std::shared_ptr<Environment> environment)
 {
-	Environment localEnvironment = Environment(m_CurrentEnvironment);
-	Environment* previous = m_CurrentEnvironment;
-	m_CurrentEnvironment = &localEnvironment;
+	std::shared_ptr<Environment> previous = m_CurrentEnvironment;
+	m_CurrentEnvironment = environment;
 
 	try {
 		for (const auto& statement : statements) {
 			Execute(statement.get());
 		}
 		m_CurrentEnvironment = previous;
+	}
+	catch (const Return& returnValue) {
+		m_CurrentEnvironment = previous;
+		throw returnValue;
 	}
 	catch (const JumpException& ex) {
 		m_CurrentEnvironment = previous;
@@ -384,6 +423,10 @@ std::string Interpreter::ToString(const std::any& value) const
 	}
 	else if (value.type() == typeid(nullptr)) {
 		return "nil";
+	}
+	else if (value.type() == typeid(std::shared_ptr<LoxCallable>)) {
+		std::shared_ptr<LoxCallable> val = std::any_cast<std::shared_ptr<LoxCallable>>(value);
+		return val->ToString();
 	}
 	else {
 		return std::any_cast<std::string>(value);

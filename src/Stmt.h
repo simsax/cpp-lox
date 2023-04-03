@@ -104,6 +104,33 @@ namespace stmt {
 		std::unique_ptr<expr::Expr> m_Initializer;
 	};
 
+	struct Function : public Stmt {
+		Function(const Token& name,
+			const std::vector<Token>& params,
+			std::vector<std::unique_ptr<stmt::Stmt>> body) :
+			m_Name(name),
+			m_Params(params),
+			m_Body(std::move(body))
+		{ }
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		std::vector<Token> m_Params;
+		std::vector<std::unique_ptr<stmt::Stmt>> m_Body;
+	};
+
+	struct Return : public Stmt {
+		Return(const Token& keyword, std::unique_ptr<expr::Expr> expression) :
+			m_Keyword(keyword), m_Expression(std::move(expression))
+		{}
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Keyword;
+		std::unique_ptr<expr::Expr> m_Expression;
+	};
+
 	struct Jump : public Stmt {
 		Jump(const Token& name) :
 			m_Name(name)
@@ -123,6 +150,8 @@ namespace stmt {
 		virtual std::any VisitVar(Var* stmt) = 0;
 		virtual std::any VisitIf(If* stmt) = 0;
 		virtual std::any VisitWhile(While* stmt) = 0;
+		virtual std::any VisitFunction(Function* stmt) = 0;
+		virtual std::any VisitReturn(Return* stmt) = 0;
 		virtual std::any VisitFor(For* stmt) = 0;
 		virtual std::any VisitJump(Jump* stmt) = 0;
 	};
@@ -152,6 +181,14 @@ namespace stmt {
 
 	inline std::any While::Accept(Visitor& visitor) {
 		return visitor.VisitWhile(this);
+	}
+
+	inline std::any Function::Accept(Visitor& visitor) {
+		return visitor.VisitFunction(this);
+	}
+
+	inline std::any Return::Accept(Visitor& visitor) {
+		return visitor.VisitReturn(this);
 	}
 
 	inline std::any For::Accept(Visitor& visitor) {

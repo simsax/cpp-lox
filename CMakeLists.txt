@@ -18,4 +18,7 @@ add_executable(
 	"src/Interpreter.cpp" 
 	"src/Stmt.h"
 	"src/Environment.cpp" 
-	)
+	"src/LoxCallable.h"
+	"src/Clock.cpp" 
+	"src/LoxFunction.cpp"
+	"src/LoxFunction.h")

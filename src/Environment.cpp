@@ -7,14 +7,15 @@ Environment::Environment() :
 {
 }
 
-Environment::Environment(Environment* enclosing) :
-	m_Enclosing(enclosing)
+Environment::Environment(std::shared_ptr<Environment> enclosing) :
+	m_Variables({}),
+	m_Enclosing(std::move(enclosing))
 {
 }
 
-void Environment::Define(const Token& name, const std::any& value)
+void Environment::Define(const std::string& name, const std::any& value)
 {
-	m_Variables[name.lexeme] = value;
+	m_Variables[name] = value;
 }
 
 void Environment::Assign(const Token& name, const std::any& value)

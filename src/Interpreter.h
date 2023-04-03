@@ -4,6 +4,7 @@
 #include "Expr.h"
 #include "Stmt.h"
 #include "Environment.h"
+#include "LoxFunction.h"
 
 class RuntimeException : public std::runtime_error {
 public:
@@ -18,6 +19,21 @@ public:
 
 protected:
 	Token m_Token;
+};
+
+class Return : public std::runtime_error {
+public:
+	Return(const std::any& value) :
+		std::runtime_error(""), m_Value(value)
+	{
+	}
+
+	inline std::any GetValue() const {
+		return m_Value;
+	}
+
+private:
+	std::any m_Value;
 };
 
 class DivisionByZeroException : public RuntimeException {
@@ -37,9 +53,6 @@ public:
 class Interpreter : public expr::Visitor, public stmt::Visitor {
 public:
 	Interpreter();
-	~Interpreter();
-	Interpreter(const Interpreter&) = delete;
-	Interpreter& operator=(const Interpreter&) = delete;
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 	void Interpret(expr::Expr* expression);
@@ -51,6 +64,7 @@ public:
 	std::any VisitLiteral(expr::Literal* expr) override;
 	std::any VisitUnary(expr::Unary* expr) override;
 	std::any VisitVariable(expr::Variable* expr) override;
+	std::any VisitCall(expr::Call* expr) override;
 	std::any VisitOprAssign(expr::OprAssign* expr) override;
 	std::any VisitTernary(expr::Ternary* expr) override;
 
@@ -60,6 +74,8 @@ public:
 	std::any VisitBlock(stmt::Block* stmt) override;
 	std::any VisitIf(stmt::If* stmt) override;
 	std::any VisitWhile(stmt::While* stmt) override;
+	std::any VisitFunction(stmt::Function* stmt) override;
+	std::any VisitReturn(stmt::Return* stmt) override;
 	std::any VisitFor(stmt::For* stmt) override;
 	std::any VisitJump(stmt::Jump* stmt) override;
 
@@ -68,6 +84,7 @@ public:
 	std::any Multiply(const Token& opr, const std::any& left, const std::any& right);
 	std::any Divide(const Token& opr, const std::any& left, const std::any& right);
 
+	friend class LoxFunction;
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;
@@ -75,9 +92,11 @@ private:
 
 	std::any Evaluate(expr::Expr* expr);
 	void Execute(stmt::Stmt* statement);
-	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
+	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
+		std::shared_ptr<Environment> environment);
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
 
-	Environment* m_CurrentEnvironment;
+	std::shared_ptr<Environment> m_Globals;
+	std::shared_ptr<Environment> m_CurrentEnvironment;
 };
