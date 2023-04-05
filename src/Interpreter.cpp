@@ -74,6 +74,12 @@ std::any Interpreter::VisitTernary(expr::Ternary* expr)
 		return Evaluate(expr->m_ElseBranch.get());
 }
 
+std::any Interpreter::VisitAnonFunction(expr::AnonFunction* expr)
+{
+	return static_cast<std::shared_ptr<LoxCallable>>(
+		std::make_shared<LoxAnonFunction>(expr, m_CurrentEnvironment));
+}
+
 std::any Interpreter::VisitBinary(expr::Binary* expr)
 {
 	std::any left = Evaluate(expr->m_Left.get());

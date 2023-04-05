@@ -17,7 +17,12 @@ std::vector<std::unique_ptr<stmt::Stmt>> Parser::Parse()
 	return statements;
 }
 
-std::unique_ptr<expr::Expr> Parser::Expression() { return Assignment(); }
+std::unique_ptr<expr::Expr> Parser::Expression() {
+	if (Match(TokenType::FUN)) {
+		return AnonFunDecl();
+	}
+	return Assignment();
+}
 
 std::unique_ptr<expr::Expr> Parser::Assignment()
 {
@@ -192,6 +197,25 @@ std::unique_ptr<expr::Expr> Parser::FinishCall(std::unique_ptr<expr::Expr> expr)
 	const Token& paren = Consume(TokenType::RIGHT_PAREN, "Expect ')' after arguments.");
 
 	return std::make_unique<expr::Call>(std::move(expr), paren, std::move(arguments));
+}
+
+std::unique_ptr<expr::Expr> Parser::AnonFunDecl()
+{
+	Consume(TokenType::LEFT_PAREN, "Expect '(' after 'fun'.");
+	std::vector<Token> params;
+	if (CurrentToken().type != TokenType::RIGHT_PAREN) {
+		do {
+			if (params.size() >= 255) {
+				Error(CurrentToken(), "Can't have more than 255 parameters.");
+			}
+			Token param = Consume(TokenType::IDENTIFIER, "Expect parameter name.");
+			params.emplace_back(std::move(param));
+		} while (Match(TokenType::COMMA));
+	}
+	Consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
+	Consume(TokenType::LEFT_BRACE, "Expect '{' before function body.");
+	std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
+	return std::make_unique<expr::AnonFunction>(std::move(params), std::move(body));
 }
 
 std::unique_ptr<stmt::Stmt> Parser::Statement()

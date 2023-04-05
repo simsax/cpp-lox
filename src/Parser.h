@@ -32,7 +32,7 @@ returnStmt	   → "return" expression? ";" ;
 
 // Expressions
 comma		   → expression ( "," expression )* ;
-expression     → assignment | opr_assignment ;
+expression     → assignment | opr_assignment | anonFunDecl ;
 assignment     → IDENTIFIER "=" assignment | ternary ;
 opr_assignment → IDENTIFIER ( "+=" | "-=" | "*=" | "/=" ) ternary ;
 ternary		   → logic_or "?" comma ":" ternary | logic_or ;
@@ -45,6 +45,8 @@ factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary | call ;
 call           → primary ( "(" arguments? ")" )* ;
 arguments	   → expression ("," expression)* ;
+anonFunDecl	   → "fun" "(" parameters? ")" block ;
+parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
 			   | "(" expression ")" | IDENTIFIER ;
 */
@@ -81,6 +83,7 @@ private:
 	std::unique_ptr<expr::Expr> Ternary();
 	std::unique_ptr<expr::Expr> Call();
 	std::unique_ptr<expr::Expr> FinishCall(std::unique_ptr<expr::Expr> expr);
+	std::unique_ptr<expr::Expr> AnonFunDecl();
 
 	std::unique_ptr<stmt::Stmt> Statement();
 	std::unique_ptr<stmt::Stmt> Declaration();

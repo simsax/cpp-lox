@@ -4,6 +4,9 @@
 #include <vector>
 #include "Token.h"
 
+namespace stmt {
+	struct Stmt;
+}
 
 namespace expr {
 
@@ -141,6 +144,18 @@ namespace expr {
 		std::vector<std::unique_ptr<Expr>> m_Arguments;
 	};
 
+	struct AnonFunction : public Expr {
+		AnonFunction(const std::vector<Token>& params,
+			std::vector<std::unique_ptr<stmt::Stmt>> body);
+
+		virtual ~AnonFunction() override;
+
+		std::any Accept(Visitor& visitor) override;
+
+		std::vector<Token> m_Params;
+		std::vector<std::unique_ptr<stmt::Stmt>> m_Body;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -154,6 +169,7 @@ namespace expr {
 		virtual std::any VisitCall(Call* expr) = 0;
 		virtual std::any VisitOprAssign(OprAssign* expr) = 0;
 		virtual std::any VisitTernary(Ternary* expr) = 0;
+		virtual std::any VisitAnonFunction(AnonFunction* expr) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -195,5 +211,9 @@ namespace expr {
 
 	inline std::any Ternary::Accept(Visitor& visitor) {
 		return visitor.VisitTernary(this);
+	}
+
+	inline std::any AnonFunction::Accept(Visitor& visitor) {
+		return visitor.VisitAnonFunction(this);
 	}
 }

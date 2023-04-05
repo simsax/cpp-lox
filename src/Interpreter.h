@@ -5,6 +5,7 @@
 #include "Stmt.h"
 #include "Environment.h"
 #include "LoxFunction.h"
+#include "LoxAnonFunction.h"
 
 class RuntimeException : public std::runtime_error {
 public:
@@ -67,6 +68,7 @@ public:
 	std::any VisitCall(expr::Call* expr) override;
 	std::any VisitOprAssign(expr::OprAssign* expr) override;
 	std::any VisitTernary(expr::Ternary* expr) override;
+	std::any VisitAnonFunction(expr::AnonFunction* expr) override;
 
 	std::any VisitExpression(stmt::Expression* stmt) override;
 	std::any VisitPrint(stmt::Print* stmt) override;
@@ -85,6 +87,7 @@ public:
 	std::any Divide(const Token& opr, const std::any& left, const std::any& right);
 
 	friend class LoxFunction;
+	friend class LoxAnonFunction;
 private:
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;
