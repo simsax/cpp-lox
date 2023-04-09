@@ -21,4 +21,6 @@ add_executable(
 	"src/LoxCallable.h"
 	"src/Clock.cpp" 
 	"src/LoxFunction.cpp"
-	"src/LoxFunction.h")
+	"src/LoxFunction.h"
+	"src/Resolver.cpp"
+)

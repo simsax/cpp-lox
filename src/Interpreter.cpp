@@ -23,10 +23,23 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 	}
 }
 
+void Interpreter::Resolve(expr::Expr* expr, int depth)
+{
+	m_Locals.insert({ expr, depth });
+}
+
 std::any Interpreter::VisitAssign(expr::Assign* expr)
 {
 	std::any assignmentValue = Evaluate(expr->m_Value.get());
-	m_CurrentEnvironment->Assign(expr->m_Name, assignmentValue);
+
+	if (m_Locals.contains(expr)) {
+		int distance = m_Locals.at(expr);
+		m_CurrentEnvironment->AssignAt(distance, expr->m_Name, assignmentValue);
+	}
+	else {
+		m_Globals->Assign(expr->m_Name, assignmentValue);
+	}
+
 	return assignmentValue;
 }
 
@@ -119,7 +132,7 @@ std::any Interpreter::VisitUnary(expr::Unary* expr)
 
 std::any Interpreter::VisitVariable(expr::Variable* expr)
 {
-	return m_CurrentEnvironment->Get(expr->m_Name);
+	return LookUpVariable(expr->m_Name, expr);
 }
 
 std::any Interpreter::VisitCall(expr::Call* expr)
@@ -275,6 +288,17 @@ bool Interpreter::IsEqual(std::any left, std::any right) const
 	if (left.type() == typeid(std::nullptr_t) && right.type() == typeid(std::nullptr_t))
 		return true;
 	return false;
+}
+
+std::any Interpreter::LookUpVariable(const Token& name, expr::Expr* expr) const
+{
+	if (m_Locals.contains(expr)) {
+		int distance = m_Locals.at(expr);
+		return m_CurrentEnvironment->GetAt(distance, name.lexeme);
+	}
+	else {
+		return m_Globals->Get(name);
+	}
 }
 
 std::string Interpreter::ToString(const std::any& value) const

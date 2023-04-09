@@ -3,6 +3,7 @@
 #include "Scanner.h"
 #include "Parser.h"
 #include "Interpreter.h"
+#include "Resolver.h"
 
 #define EX_USAGE 64
 #define EX_DATAERR 65
@@ -44,6 +45,10 @@ namespace Lox {
 		std::vector<Token> tokens = scanner.ScanTokens();
 		Parser parser = Parser(tokens);
 		std::vector<std::unique_ptr<stmt::Stmt>> statements = parser.Parse();
+		if (m_HadError)
+			return;
+		Resolver resolver = Resolver(&m_Interpreter);
+		resolver.Resolve(statements);
 		if (m_HadError)
 			return;
 		m_Interpreter.Interpret(statements);

@@ -44,3 +44,22 @@ std::any Environment::Get(const Token& name) const
 		throw RuntimeException("Undefined variable '" + name.lexeme + "'.", name);
 	}
 }
+
+std::any Environment::GetAt(int distance, const std::string& name)
+{
+	return Ancestor(distance)->m_Variables.at(name);
+}
+
+void Environment::AssignAt(int distance, const Token& name, const std::any& value)
+{
+	Ancestor(distance)->m_Variables[name.lexeme] = value;
+}
+
+Environment* Environment::Ancestor(int distance)
+{
+	Environment* environment = this;
+	for (int i = 0; i < distance; i++) {
+		environment = environment->m_Enclosing.get();
+	}
+	return environment;
+}
