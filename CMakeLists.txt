@@ -24,4 +24,7 @@ add_executable(
 	"src/LoxFunction.h"
 	"src/LoxAnonFunction.h"
 	"src/LoxAnonFunction.cpp" 
-	"src/AnonFunction.cpp")
+	"src/AnonFunction.cpp"
+	"src/LoxFunction.h"
+	"src/Resolver.cpp"
+)

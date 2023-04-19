@@ -56,6 +56,7 @@ public:
 	Interpreter();
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
+	void Resolve(expr::Expr* expr, int depth);
 	void Interpret(expr::Expr* expression);
 
 	std::any VisitAssign(expr::Assign* expr) override;
@@ -99,7 +100,9 @@ private:
 		std::shared_ptr<Environment> environment);
 	bool IsTruthy(std::any value) const;
 	bool IsEqual(std::any left, std::any right) const;
+	std::any LookUpVariable(const Token& name, expr::Expr* expr) const;
 
 	std::shared_ptr<Environment> m_Globals;
 	std::shared_ptr<Environment> m_CurrentEnvironment;
+	std::unordered_map<expr::Expr*, int> m_Locals;
 };
