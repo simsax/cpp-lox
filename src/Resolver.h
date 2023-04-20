@@ -45,9 +45,12 @@ private:
 	void Resolve(expr::Expr* expr);
 	void Declare(const Token& name);
 	void Define(const Token& name);
-	void ResolveLocal(expr::Expr* expr, const Token& name);
+	void ResolveLocal(expr::Expr* expr, const Token& name, bool isAssign);
+	void CheckVarUsage();
 
 	Interpreter* m_Interpreter;
-	std::vector<std::unordered_map<std::string, bool>> m_Scopes;
+	// first element represent whether the variable initializer has been resolved
+	// second element represents whether the variable has been used
+	std::vector<std::unordered_map<std::string, std::pair<bool, bool>>> m_Scopes;
 	FunctionType m_CurrentFunction;
 };

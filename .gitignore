@@ -21,6 +21,7 @@ CMakeSettings.json
 *.sln.docstates
 *.lox
 src/utils/*
+compile_commands.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
