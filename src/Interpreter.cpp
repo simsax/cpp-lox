@@ -3,6 +3,7 @@
 #include "Clock.h"
 #include "LoxCallable.h"
 #include <regex>
+#include <stdint.h>
 
 Interpreter::Interpreter() :
 	m_Globals(std::make_shared<Environment>()), m_CurrentEnvironment(m_Globals)
@@ -23,9 +24,9 @@ void Interpreter::Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& stat
 	}
 }
 
-void Interpreter::Resolve(expr::Expr* expr, int depth)
+void Interpreter::Resolve(expr::Expr* expr, uint32_t depth, uint32_t variableIndex)
 {
-	m_Locals.insert({ expr, depth });
+	m_Locals.insert({ expr, {depth, variableIndex} });
 }
 
 void Interpreter::Interpret(expr::Expr* expression)
@@ -42,13 +43,19 @@ void Interpreter::Interpret(expr::Expr* expression)
 std::any Interpreter::VisitAssign(expr::Assign* expr)
 {
 	std::any assignmentValue = Evaluate(expr->m_Value.get());
+	return AssignVariable(expr->m_Name, expr, assignmentValue);
+}
 
+std::any Interpreter::AssignVariable(const Token& name, expr::Expr* expr,
+	const std::any& assignmentValue) const {
 	if (m_Locals.contains(expr)) {
-		int distance = m_Locals.at(expr);
-		m_CurrentEnvironment->AssignAt(distance, expr->m_Name, assignmentValue);
+		ResolvedData resolvedData = m_Locals.at(expr);
+		uint32_t distance = resolvedData.scopeHops;
+		uint32_t variableIndex = resolvedData.variableIndex;
+		m_CurrentEnvironment->AssignAt(distance, variableIndex, assignmentValue);
 	}
 	else {
-		m_Globals->Assign(expr->m_Name, assignmentValue);
+		m_Globals->Assign(name, assignmentValue);
 	}
 
 	return assignmentValue;
@@ -56,7 +63,7 @@ std::any Interpreter::VisitAssign(expr::Assign* expr)
 
 std::any Interpreter::VisitOprAssign(expr::OprAssign* expr)
 {
-	std::any variableValue = m_CurrentEnvironment->Get(expr->m_Name);
+	std::any variableValue = LookUpVariable(expr->m_Name, expr);
 	std::any assignmentValue = Evaluate(expr->m_Value.get());
 	switch (expr->m_Opr.type)
 	{
@@ -75,8 +82,7 @@ std::any Interpreter::VisitOprAssign(expr::OprAssign* expr)
 	default:
 		break;
 	}
-	m_CurrentEnvironment->Assign(expr->m_Name, variableValue);
-	return variableValue;
+	return AssignVariable(expr->m_Name, expr, variableValue);
 }
 
 std::any Interpreter::VisitTernary(expr::Ternary* expr)
@@ -221,7 +227,10 @@ std::any Interpreter::VisitVar(stmt::Var* stmt)
 	expr::Expr* initializer = stmt->m_Initializer.get();
 	if (initializer != nullptr)
 		value = Evaluate(initializer);
-	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, std::move(value));
+	if (m_CurrentEnvironment == m_Globals)
+		m_CurrentEnvironment->Define(stmt->m_Name.lexeme, std::move(value));
+	else
+		m_CurrentEnvironment->DefineLocal(std::move(value));
 	return nullptr;
 }
 
@@ -297,7 +306,10 @@ std::any Interpreter::VisitFor(stmt::For* stmt)
 std::any Interpreter::VisitFunction(stmt::Function* stmt)
 {
 	std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(stmt, m_CurrentEnvironment);
-	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
+	if (m_CurrentEnvironment == m_Globals)
+		m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
+	else
+		m_CurrentEnvironment->DefineLocal(loxFunction);
 	return nullptr;
 }
 
@@ -398,7 +410,7 @@ void Interpreter::ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& s
 	}
 }
 
-bool Interpreter::IsTruthy(std::any value) const
+bool Interpreter::IsTruthy(const std::any& value) const
 {
 	if (value.type() == typeid(bool))
 		return std::any_cast<bool>(value);
@@ -407,7 +419,7 @@ bool Interpreter::IsTruthy(std::any value) const
 	return true;
 }
 
-bool Interpreter::IsEqual(std::any left, std::any right) const
+bool Interpreter::IsEqual(const std::any& left, const std::any& right) const
 {
 	if (left.type() != right.type())
 		return false;
@@ -425,8 +437,10 @@ bool Interpreter::IsEqual(std::any left, std::any right) const
 std::any Interpreter::LookUpVariable(const Token& name, expr::Expr* expr) const
 {
 	if (m_Locals.contains(expr)) {
-		int distance = m_Locals.at(expr);
-		return m_CurrentEnvironment->GetAt(distance, name.lexeme);
+		ResolvedData resolvedData = m_Locals.at(expr);
+		uint32_t distance = resolvedData.scopeHops;
+		uint32_t variableIndex = resolvedData.variableIndex;
+		return m_CurrentEnvironment->GetAt(distance, variableIndex);
 	}
 	else {
 		return m_Globals->Get(name);

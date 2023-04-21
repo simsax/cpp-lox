@@ -1,11 +1,12 @@
 #include "Resolver.h"
 #include "Lox.h"
 
-using scopeMap = std::unordered_map<std::string, std::pair<bool, bool>>;
+using scopeMap = std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>;
 
 Resolver::Resolver(Interpreter* interpreter) :
 	m_Interpreter(interpreter),
-	m_CurrentFunction(FunctionType::NONE)
+	m_CurrentFunction(FunctionType::NONE),
+	m_VariableIndex(0)
 {
 }
 
@@ -51,7 +52,7 @@ std::any Resolver::VisitVariable(expr::Variable* expr)
 {
 	if (!m_Scopes.empty() &&
 		m_Scopes.back().contains(expr->m_Name.lexeme) &&
-		m_Scopes.back().at(expr->m_Name.lexeme).first == false) {
+		std::get<0>(m_Scopes.back().at(expr->m_Name.lexeme)) == false) {
 		Lox::Error(expr->m_Name, "Can't read local variable in its own initializer.");
 	}
 	ResolveLocal(expr, expr->m_Name, false);
@@ -155,10 +156,12 @@ std::any Resolver::VisitReturn(stmt::Return* stmt)
 
 std::any Resolver::VisitFor(stmt::For* stmt)
 {
+	BeginScope();
 	Resolve(stmt->m_Initializer.get());
 	Resolve(stmt->m_Condition.get());
 	Resolve(stmt->m_Increment.get());
 	Resolve(stmt->m_Body.get());
+	EndScope();
 	return nullptr;
 }
 
@@ -170,6 +173,7 @@ std::any Resolver::VisitJump(stmt::Jump*)
 void Resolver::BeginScope()
 {
 	m_Scopes.push_back(scopeMap{});
+	m_VariableIndex = 0;
 }
 
 void Resolver::EndScope()
@@ -231,7 +235,7 @@ void Resolver::Declare(const Token& name)
 	if (scope.contains(name.lexeme)) {
 		Lox::Error(name, "Already a variable with this name in this scope.");
 	}
-	scope.insert({ name.lexeme, {false, false} });
+	scope.insert({ name.lexeme, {false, false, m_VariableIndex++} });
 }
 
 void Resolver::Define(const Token& name)
@@ -239,7 +243,7 @@ void Resolver::Define(const Token& name)
 	if (m_Scopes.empty())
 		return;
 	scopeMap& scope = m_Scopes.back();
-	scope[name.lexeme].first = true;
+	std::get<0>(scope[name.lexeme]) = true;
 }
 
 // each time it visits a variable, it tells the interpreter how many scopes there
@@ -251,11 +255,12 @@ void Resolver::ResolveLocal(expr::Expr* expr, const Token& name, bool isAssign)
 		if (m_Scopes[i].contains(name.lexeme)) {
 			// if the variable is in the current scope, we pass 0.
 			// if it's in the immediately enclosing scope, we pass 1, and so on
-			m_Interpreter->Resolve(expr, numScopes - 1 - i);
+			m_Interpreter->Resolve(expr, numScopes - 1 - i,
+				std::get<2>(m_Scopes[i].at(name.lexeme)));
 
 			// mark the variable as used
 			if (!isAssign)
-				m_Scopes[i].at(name.lexeme).second = true;
+				std::get<1>(m_Scopes[i].at(name.lexeme)) = true;
 			return;
 		}
 	}
@@ -266,7 +271,7 @@ void Resolver::CheckVarUsage()
 	// check for local variables that are never used
 	scopeMap& scope = m_Scopes.back();
 	for (const auto& [key, value] : scope) {
-		if (!value.second) {
+		if (!std::get<1>(value)) {
 			Lox::Error("Local variable '" + key + "' is never used.");
 		}
 	}

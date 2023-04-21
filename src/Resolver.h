@@ -51,6 +51,8 @@ private:
 	Interpreter* m_Interpreter;
 	// first element represent whether the variable initializer has been resolved
 	// second element represents whether the variable has been used
-	std::vector<std::unordered_map<std::string, std::pair<bool, bool>>> m_Scopes;
+	// third element represents the unique index of the variable
+	std::vector<std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>> m_Scopes;
 	FunctionType m_CurrentFunction;
+	uint32_t m_VariableIndex;
 };

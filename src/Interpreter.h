@@ -1,5 +1,6 @@
 #pragma once
 #include <stdexcept>
+#include <stdint.h>
 #include <vector>
 #include "Expr.h"
 #include "Stmt.h"
@@ -56,7 +57,7 @@ public:
 	Interpreter();
 
 	void Interpret(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
-	void Resolve(expr::Expr* expr, int depth);
+	void Resolve(expr::Expr* expr, uint32_t depth, uint32_t variableIndex);
 	void Interpret(expr::Expr* expression);
 
 	std::any VisitAssign(expr::Assign* expr) override;
@@ -90,6 +91,11 @@ public:
 	friend class LoxFunction;
 	friend class LoxAnonFunction;
 private:
+	struct ResolvedData {
+		uint32_t scopeHops;
+		uint32_t variableIndex;
+	};
+
 	void CheckNumberOperand(const Token& opr, const std::any& operand) const;
 	void CheckNumberOperands(const Token& opr, const std::any& left, const std::any& right) const;
 	std::string ToString(const std::any& value) const;
@@ -98,11 +104,17 @@ private:
 	void Execute(stmt::Stmt* statement);
 	void ExecuteBlock(const std::vector<std::unique_ptr<stmt::Stmt>>& statements,
 		std::shared_ptr<Environment> environment);
-	bool IsTruthy(std::any value) const;
-	bool IsEqual(std::any left, std::any right) const;
+	bool IsTruthy(const std::any& value) const;
+	bool IsEqual(const std::any& left, const std::any& right) const;
 	std::any LookUpVariable(const Token& name, expr::Expr* expr) const;
+	std::any AssignVariable(const Token& name, expr::Expr* expr,
+		const std::any& assignmentValue) const;
 
 	std::shared_ptr<Environment> m_Globals;
 	std::shared_ptr<Environment> m_CurrentEnvironment;
-	std::unordered_map<expr::Expr*, int> m_Locals;
+
+	// map that associates each syntax tree node with its resolved data
+	// a map using the variable names as keys wouldn't work because the same variable
+	// can be accessed in different expressions and in different scopes
+	std::unordered_map<expr::Expr*, ResolvedData> m_Locals;
 };

@@ -1,4 +1,5 @@
 #include <stdexcept>
+#include <stdint.h>
 #include "Environment.h"
 #include "Interpreter.h"
 
@@ -8,20 +9,23 @@ Environment::Environment() :
 }
 
 Environment::Environment(std::shared_ptr<Environment> enclosing) :
-	m_Variables({}),
 	m_Enclosing(std::move(enclosing))
 {
 }
 
 void Environment::Define(const std::string& name, const std::any& value)
 {
-	m_Variables[name] = value;
+	m_Globals[name] = value;
+}
+
+void Environment::DefineLocal(const std::any& value) {
+	m_Locals.emplace_back(value);
 }
 
 void Environment::Assign(const Token& name, const std::any& value)
 {
-	if (m_Variables.contains(name.lexeme)) {
-		m_Variables[name.lexeme] = value;
+	if (m_Globals.contains(name.lexeme)) {
+		m_Globals[name.lexeme] = value;
 		return;
 	}
 	if (m_Enclosing != nullptr) {
@@ -34,7 +38,7 @@ void Environment::Assign(const Token& name, const std::any& value)
 std::any Environment::Get(const Token& name) const
 {
 	try {
-		std::any value = m_Variables.at(name.lexeme);
+		std::any value = m_Globals.at(name.lexeme);
 		if (value.type() == typeid(std::nullptr_t))
 			throw RuntimeException("Variable '" + name.lexeme + "' has not been initialized.", name);
 		return value;
@@ -47,14 +51,14 @@ std::any Environment::Get(const Token& name) const
 	}
 }
 
-std::any Environment::GetAt(int distance, const std::string& name)
+std::any Environment::GetAt(uint32_t distance, uint32_t variableIndex)
 {
-	return Ancestor(distance)->m_Variables.at(name);
+	return Ancestor(distance)->m_Locals[variableIndex];
 }
 
-void Environment::AssignAt(int distance, const Token& name, const std::any& value)
+void Environment::AssignAt(uint32_t distance, uint32_t variableIndex, const std::any& value)
 {
-	Ancestor(distance)->m_Variables[name.lexeme] = value;
+	Ancestor(distance)->m_Locals[variableIndex] = value;
 }
 
 Environment* Environment::Ancestor(int distance)
