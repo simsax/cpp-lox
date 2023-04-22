@@ -113,6 +113,18 @@ namespace stmt {
 		std::unique_ptr<expr::Expr> m_Expression;
 	};
 
+	struct Class : public Stmt {
+		Class(const Token& name, std::vector<std::unique_ptr<stmt::Function>> methods) :
+			m_Name(name),
+			m_Methods(std::move(methods))
+		{}
+
+		std::any Accept(Visitor& visitor) override;
+
+		Token m_Name;
+		std::vector<std::unique_ptr<stmt::Function>> m_Methods;
+	};
+
 	class Visitor {
 	public:
 		virtual ~Visitor() = 0;
@@ -124,6 +136,7 @@ namespace stmt {
 		virtual std::any VisitWhile(While* stmt) = 0;
 		virtual std::any VisitFunction(Function* stmt) = 0;
 		virtual std::any VisitReturn(Return* stmt) = 0;
+		virtual std::any VisitClass(Class* stmt) = 0;
 	};
 
 	inline Visitor::~Visitor() = default;
@@ -159,5 +172,9 @@ namespace stmt {
 
 	inline std::any Return::Accept(Visitor& visitor) {
 		return visitor.VisitReturn(this);
+	}
+
+	inline std::any Class::Accept(Visitor& visitor) {
+		return visitor.VisitClass(this);
 	}
 }

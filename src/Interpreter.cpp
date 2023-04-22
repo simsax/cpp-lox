@@ -1,11 +1,15 @@
 #include "Interpreter.h"
-#include "Lox.h"
 #include "Clock.h"
+#include "Lox.h"
 #include "LoxCallable.h"
+#include "LoxClass.h"
+#include "LoxInstance.h"
+#include <memory>
 #include <regex>
 
-Interpreter::Interpreter() :
-	m_Globals(std::make_shared<Environment>()), m_CurrentEnvironment(m_Globals)
+Interpreter::Interpreter()
+	: m_Globals(std::make_shared<Environment>())
+	, m_CurrentEnvironment(m_Globals)
 {
 	// std::any can hold only copy constructible types -> no unique_ptr...
 	m_Globals->Define("clock", static_cast<std::shared_ptr<LoxCallable>>(std::make_shared<Clock>()));
@@ -149,12 +153,44 @@ std::any Interpreter::VisitCall(expr::Call* expr)
 		std::shared_ptr<LoxCallable> function = std::any_cast<std::shared_ptr<LoxCallable>>(callee);
 		if (arguments.size() != function->Arity()) {
 			throw RuntimeException("Expected " + std::to_string(function->Arity())
-				+ " arguments but got " + std::to_string(arguments.size()) + ".", expr->m_Paren);
+				+ " arguments but got " + std::to_string(arguments.size()) + ".",
+				expr->m_Paren);
 		}
 		return function->Call(*this, arguments);
 	}
 	else {
 		throw RuntimeException("Can only call function and classes.", expr->m_Paren);
+	}
+}
+
+std::any Interpreter::VisitGet(expr::Get* expr)
+{
+	std::any object = Evaluate(expr->m_Object.get());
+	// only instances have properties
+	if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
+		std::shared_ptr<LoxInstance> instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
+		return instance->Get(expr->m_Name);
+	}
+
+	throw RuntimeException("Only instances have properties.", expr->m_Name);
+}
+
+std::any Interpreter::VisitSet(expr::Set* expr)
+{
+	/*
+		1. Evaluate the object.
+		2. Raise a runtime error if it's not an instance of a class.
+		3. Evaluate the value.
+	*/
+	std::any object = Evaluate(expr->m_Object.get());
+	if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
+		std::shared_ptr<LoxInstance> instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
+		std::any value = Evaluate(expr->m_Value.get());
+		instance->Set(expr->m_Name, value);
+		return value;
+	}
+	else {
+		throw RuntimeException("Only instances have fields.", expr->m_Name);
 	}
 }
 
@@ -220,7 +256,15 @@ std::any Interpreter::VisitReturn(stmt::Return* stmt)
 	throw Return(value);
 }
 
-void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand)const
+std::any Interpreter::VisitClass(stmt::Class* stmt)
+{
+	m_CurrentEnvironment->Define(stmt->m_Name.lexeme, nullptr);
+	std::shared_ptr<LoxCallable> klass = std::make_shared<LoxClass>(stmt->m_Name.lexeme);
+	m_CurrentEnvironment->Assign(stmt->m_Name, klass);
+	return nullptr;
+}
+
+void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand) const
 {
 	if (operand.type() == typeid(double))
 		return;
@@ -326,8 +370,11 @@ std::string Interpreter::ToString(const std::any& value) const
 		std::shared_ptr<LoxCallable> val = std::any_cast<std::shared_ptr<LoxCallable>>(value);
 		return val->ToString();
 	}
+	else if (value.type() == typeid(std::shared_ptr<LoxInstance>)) {
+		std::shared_ptr<LoxInstance> val = std::any_cast<std::shared_ptr<LoxInstance>>(value);
+		return val->ToString();
+	}
 	else {
 		return std::any_cast<std::string>(value);
 	}
 }
-

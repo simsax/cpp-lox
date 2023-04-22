@@ -1,0 +1,57 @@
+[
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\main.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\main.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\main.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Lox.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Lox.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Lox.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Scanner.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Scanner.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Scanner.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Parser.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Parser.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Parser.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Interpreter.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Interpreter.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Interpreter.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Environment.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Environment.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Environment.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Clock.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Clock.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Clock.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\LoxFunction.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\LoxFunction.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\LoxFunction.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\LoxAnonFunction.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\LoxAnonFunction.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\LoxAnonFunction.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\AnonFunction.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\AnonFunction.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\AnonFunction.cpp"
+},
+{
+  "directory": "C:/Users/simsa/dev/cpp-lox/bin/build/x64-Debug",
+  "command": "C:\\PROGRA~1\\MICROS~4\\2022\\COMMUN~1\\VC\\Tools\\MSVC\\1435~1.322\\bin\\Hostx64\\x64\\cl.exe  /nologo /TP /DWIN32 /D_WINDOWS /GR /EHsc /W4 /WX /Zi /Ob0 /Od /RTC1 -MDd -std:c++20 /FoCMakeFiles\\cpp-lox.dir\\src\\Resolver.cpp.obj /FdTARGET_COMPILE_PDB /FS -c C:\\Users\\simsa\\dev\\cpp-lox\\src\\Resolver.cpp",
+  "file": "C:\\Users\\simsa\\dev\\cpp-lox\\src\\Resolver.cpp"
+}
+]
