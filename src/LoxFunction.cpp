@@ -1,9 +1,11 @@
 #include "LoxFunction.h"
 #include "Interpreter.h"
 
-LoxFunction::LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure)
+LoxFunction::LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure,
+    bool isInitializer)
     : m_Declaration(declaration)
     , m_Closure(std::move(closure))
+    , m_IsInitializer(isInitializer)
 {
 }
 
@@ -17,7 +19,13 @@ std::any LoxFunction::Call(Interpreter& interpreter, const std::vector<std::any>
     try {
         interpreter.ExecuteBlock(std::move(m_Declaration->m_Body), functionEnvironment);
     } catch (const Return& returnValue) {
+        if (m_IsInitializer)
+            return m_Closure->GetAt(0, "this");
         return returnValue.GetValue();
+    }
+
+    if (m_IsInitializer) {
+        return m_Closure->GetAt(0, "this");
     }
     return nullptr;
 }
@@ -36,5 +44,5 @@ std::shared_ptr<LoxCallable> LoxFunction::Bind(std::shared_ptr<LoxInstance> inst
 {
     std::shared_ptr<Environment> environment = std::make_shared<Environment>(m_Closure);
     environment->Define("this", instance);
-    return std::make_shared<LoxFunction>(m_Declaration, environment);
+    return std::make_shared<LoxFunction>(m_Declaration, environment, m_IsInitializer);
 }

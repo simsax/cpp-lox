@@ -238,7 +238,7 @@ std::any Interpreter::VisitWhile(stmt::While* stmt)
 std::any Interpreter::VisitFunction(stmt::Function* stmt)
 {
     std::shared_ptr<LoxCallable> loxFunction = std::make_shared<LoxFunction>(
-        stmt, m_CurrentEnvironment);
+        stmt, m_CurrentEnvironment, false);
     m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
     return nullptr;
 }
@@ -257,7 +257,8 @@ std::any Interpreter::VisitClass(stmt::Class* stmt)
     MethodMap methods;
     for (const std::unique_ptr<stmt::Function>& method : stmt->m_Methods) {
         methods.insert({ method->m_Name.lexeme,
-            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment) });
+            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment,
+                method->m_Name.lexeme == "init") });
     }
     std::shared_ptr<LoxCallable> klass = std::make_shared<LoxClass>(
         stmt->m_Name.lexeme, std::move(methods));

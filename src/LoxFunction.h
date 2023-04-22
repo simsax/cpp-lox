@@ -8,7 +8,8 @@ class LoxInstance;
 
 class LoxFunction : public LoxCallable {
 public:
-    LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure);
+    LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure,
+        bool isInitializer);
     std::any Call(Interpreter& interpreter,
         const std::vector<std::any>& arguments) override;
     size_t Arity() const override;
@@ -18,4 +19,5 @@ public:
 private:
     stmt::Function* m_Declaration;
     std::shared_ptr<Environment> m_Closure;
+    bool m_IsInitializer;
 };
