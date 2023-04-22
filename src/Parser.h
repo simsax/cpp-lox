@@ -39,7 +39,7 @@ factor         → unary ( ( "/" | "*" ) unary )* ;
 unary          → ( "!" | "-" ) unary | call ;
 call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments	   → expression ("," expression)* ;
-primary        → NUMBER | STRING | "true" | "false" | "nil"
+primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
                            | "(" expression ")" | IDENTIFIER ;
 */
 

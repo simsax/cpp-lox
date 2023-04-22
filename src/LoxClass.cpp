@@ -28,7 +28,7 @@ std::string LoxClass::GetName() const
     return m_Name;
 }
 
-std::shared_ptr<LoxCallable> LoxClass::FindMethod(const std::string& name) const
+std::shared_ptr<LoxFunction> LoxClass::FindMethod(const std::string& name) const
 {
     if (m_Methods.contains(name)) {
         return m_Methods.at(name);

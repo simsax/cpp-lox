@@ -2,12 +2,13 @@
 
 #include "LoxClass.h"
 #include "Token.h"
+#include <memory>
 #include <unordered_map>
 
-class LoxInstance {
+class LoxInstance : public std::enable_shared_from_this<LoxInstance> {
 public:
     LoxInstance(const LoxClass& classRef);
-    std::any Get(const Token& name) const;
+    std::any Get(const Token& name);
     void Set(const Token& name, const std::any& value);
     std::string ToString() const;
 

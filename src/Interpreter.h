@@ -1,7 +1,6 @@
 #pragma once
 #include "Environment.h"
 #include "Expr.h"
-#include "LoxFunction.h"
 #include "Stmt.h"
 #include <stdexcept>
 #include <vector>
@@ -57,6 +56,7 @@ public:
     std::any VisitCall(expr::Call* expr) override;
     std::any VisitGet(expr::Get* expr) override;
     std::any VisitSet(expr::Set* expr) override;
+    std::any VisitThis(expr::This* expr) override;
 
     std::any VisitExpression(stmt::Expression* stmt) override;
     std::any VisitPrint(stmt::Print* stmt) override;

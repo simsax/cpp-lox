@@ -31,3 +31,10 @@ std::string LoxFunction::ToString() const
 {
     return "<fn " + m_Declaration->m_Name.lexeme + ">";
 }
+
+std::shared_ptr<LoxCallable> LoxFunction::Bind(std::shared_ptr<LoxInstance> instance)
+{
+    std::shared_ptr<Environment> environment = std::make_shared<Environment>(m_Closure);
+    environment->Define("this", instance);
+    return std::make_shared<LoxFunction>(m_Declaration, environment);
+}

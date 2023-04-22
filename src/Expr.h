@@ -149,6 +149,17 @@ struct Set : public Expr {
     std::unique_ptr<Expr> m_Value;
 };
 
+struct This : public Expr {
+    This(const Token& keyword)
+        : m_Keyword(keyword)
+    {
+    }
+
+    std::any Accept(Visitor& visitor) override;
+
+    Token m_Keyword;
+};
+
 class Visitor {
 public:
     virtual ~Visitor() = 0;
@@ -162,6 +173,7 @@ public:
     virtual std::any VisitCall(Call* expr) = 0;
     virtual std::any VisitGet(Get* expr) = 0;
     virtual std::any VisitSet(Set* expr) = 0;
+    virtual std::any VisitThis(This* expr) = 0;
 };
 
 inline Visitor::~Visitor() = default;
@@ -214,5 +226,10 @@ inline std::any Get::Accept(Visitor& visitor)
 inline std::any Set::Accept(Visitor& visitor)
 {
     return visitor.VisitSet(this);
+}
+
+inline std::any This::Accept(Visitor& visitor)
+{
+    return visitor.VisitThis(this);
 }
 }

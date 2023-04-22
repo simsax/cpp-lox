@@ -4,7 +4,7 @@
 #include "LoxFunction.h"
 #include <string>
 
-using MethodMap = std::unordered_map<std::string, std::shared_ptr<LoxCallable>>;
+using MethodMap = std::unordered_map<std::string, std::shared_ptr<LoxFunction>>;
 
 class LoxClass : public LoxCallable {
 public:
@@ -15,7 +15,7 @@ public:
     size_t Arity() const override;
     std::string ToString() const override;
     std::string GetName() const;
-    std::shared_ptr<LoxCallable> FindMethod(const std::string& name) const;
+    std::shared_ptr<LoxFunction> FindMethod(const std::string& name) const;
 
 private:
     std::string m_Name;

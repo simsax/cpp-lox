@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Interpreter.h"
+#include <stdint.h>
 
 class Resolver : public expr::Visitor, public stmt::Visitor {
 public:
@@ -18,6 +19,7 @@ public:
     std::any VisitCall(expr::Call* expr) override;
     std::any VisitGet(expr::Get* expr) override;
     std::any VisitSet(expr::Set* expr) override;
+    std::any VisitThis(expr::This* expr) override;
 
     std::any VisitExpression(stmt::Expression* stmt) override;
     std::any VisitPrint(stmt::Print* stmt) override;
@@ -36,6 +38,11 @@ private:
         NONE
     };
 
+    enum class ClassType : uint8_t {
+        CLASS,
+        NONE
+    };
+
     void Resolve(stmt::Stmt* stmt);
     void BeginScope();
     void EndScope();
@@ -48,4 +55,5 @@ private:
     Interpreter* m_Interpreter;
     std::vector<std::unordered_map<std::string, bool>> m_Scopes;
     FunctionType m_CurrentFunction;
+    ClassType m_CurrentClass;
 };
