@@ -32,6 +32,7 @@ public:
 private:
     enum class FunctionType : uint8_t {
         FUNCTION,
+        METHOD,
         NONE
     };
 

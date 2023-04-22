@@ -131,6 +131,10 @@ std::any Resolver::VisitClass(stmt::Class* stmt)
 {
     Declare(stmt->m_Name);
     Define(stmt->m_Name);
+    for (const auto& method : stmt->m_Methods) {
+        FunctionType declaration = FunctionType::METHOD;
+        ResolveFunction(method.get(), declaration);
+    }
     return nullptr;
 }
 
