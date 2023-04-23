@@ -23,12 +23,12 @@ std::any LoxAnonFunction::Call(Interpreter& interpreter,
 	return nullptr;
 }
 
-size_t LoxAnonFunction::Arity()
+size_t LoxAnonFunction::Arity() const
 {
 	return m_Declaration->m_Params.size();
 }
 
-std::string LoxAnonFunction::ToString()
+std::string LoxAnonFunction::ToString() const
 {
 	return "<anonymous fn>";
 }

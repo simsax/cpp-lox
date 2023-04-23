@@ -8,16 +8,18 @@ Clock::Clock()
 
 std::any Clock::Call(Interpreter&, const std::vector<std::any>&)
 {
-	return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
-		std::chrono::system_clock::now().time_since_epoch()).count()) * std::pow(10, -9);
+    return static_cast<double>(std::chrono::duration_cast<std::chrono::nanoseconds>(
+               std::chrono::system_clock::now().time_since_epoch())
+                                   .count())
+        * std::pow(10, -9);
 }
 
-size_t Clock::Arity()
+size_t Clock::Arity() const
 {
-	return 0;
+    return 0;
 }
 
-std::string Clock::ToString()
+std::string Clock::ToString() const
 {
-	return "<built-in fn clock>";
+    return "<built-in fn clock>";
 }

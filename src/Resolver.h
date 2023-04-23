@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Interpreter.h"
+#include <stdint.h>
 
 class Resolver : public expr::Visitor, public stmt::Visitor {
 public:
@@ -19,6 +20,10 @@ public:
     std::any VisitOprAssign(expr::OprAssign* expr) override;
     std::any VisitTernary(expr::Ternary* expr) override;
     std::any VisitAnonFunction(expr::AnonFunction* expr) override;
+    std::any VisitGet(expr::Get* expr) override;
+    std::any VisitSet(expr::Set* expr) override;
+    std::any VisitThis(expr::This* expr) override;
+    std::any VisitOprSet(expr::OprSet* expr) override;
 
     std::any VisitExpression(stmt::Expression* stmt) override;
     std::any VisitPrint(stmt::Print* stmt) override;
@@ -30,12 +35,12 @@ public:
     std::any VisitReturn(stmt::Return* stmt) override;
     std::any VisitFor(stmt::For* stmt) override;
     std::any VisitJump(stmt::Jump* stmt) override;
+    std::any VisitClass(stmt::Class* stmt) override;
 
 private:
-    enum class FunctionType : uint8_t {
-        FUNCTION,
-        NONE
-    };
+    enum class FunctionType : uint8_t { FUNCTION, METHOD, INITIALIZER, NONE };
+
+    enum class ClassType : uint8_t { CLASS, NONE };
 
     void Resolve(stmt::Stmt* stmt);
     void BeginScope();
@@ -54,6 +59,7 @@ private:
     // third element represents the unique index of the variable
     std::vector<std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>> m_Scopes;
     FunctionType m_CurrentFunction;
+    ClassType m_CurrentClass;
     uint32_t m_VariableIndex;
     uint32_t m_PrevVariableIndex;
 };

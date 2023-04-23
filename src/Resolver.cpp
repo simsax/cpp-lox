@@ -1,4 +1,5 @@
 #include "Resolver.h"
+#include "Expr.h"
 #include "Lox.h"
 
 using scopeMap = std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>;
@@ -6,6 +7,7 @@ using scopeMap = std::unordered_map<std::string, std::tuple<bool, bool, uint32_t
 Resolver::Resolver(Interpreter* interpreter)
     : m_Interpreter(interpreter)
     , m_CurrentFunction(FunctionType::NONE)
+    , m_CurrentClass(ClassType::NONE)
     , m_VariableIndex(0)
     , m_PrevVariableIndex(0)
 {
@@ -38,10 +40,7 @@ std::any Resolver::VisitGrouping(expr::Grouping* expr)
     return nullptr;
 }
 
-std::any Resolver::VisitLiteral(expr::Literal*)
-{
-    return nullptr;
-}
+std::any Resolver::VisitLiteral(expr::Literal*) { return nullptr; }
 
 std::any Resolver::VisitUnary(expr::Unary* expr)
 {
@@ -51,7 +50,8 @@ std::any Resolver::VisitUnary(expr::Unary* expr)
 
 std::any Resolver::VisitVariable(expr::Variable* expr)
 {
-    if (!m_Scopes.empty() && m_Scopes.back().contains(expr->m_Name.lexeme) && std::get<0>(m_Scopes.back().at(expr->m_Name.lexeme)) == false) {
+    if (!m_Scopes.empty() && m_Scopes.back().contains(expr->m_Name.lexeme)
+        && std::get<0>(m_Scopes.back().at(expr->m_Name.lexeme)) == false) {
         Lox::Error(expr->m_Name, "Can't read local variable in its own initializer.");
     }
     ResolveLocal(expr, expr->m_Name, false);
@@ -148,8 +148,61 @@ std::any Resolver::VisitReturn(stmt::Return* stmt)
     if (m_CurrentFunction == FunctionType::NONE) {
         Lox::Error(stmt->m_Keyword, "Can't return from top-level code.");
     }
-    if (stmt->m_Expression.get() != nullptr)
+    if (stmt->m_Expression.get() != nullptr) {
+        if (m_CurrentFunction == FunctionType::INITIALIZER) {
+            Lox::Error(stmt->m_Keyword, "Can't return a value from initializer.");
+        }
         Resolve(stmt->m_Expression.get());
+    }
+    return nullptr;
+}
+
+std::any Resolver::VisitClass(stmt::Class* stmt)
+{
+    ClassType enclosingClass = m_CurrentClass;
+    m_CurrentClass = ClassType::CLASS;
+    Declare(stmt->m_Name);
+    Define(stmt->m_Name);
+    BeginScope();
+    m_Scopes.back().insert({ "this", { true, true, m_VariableIndex++ } });
+    for (const auto& method : stmt->m_Methods) {
+        FunctionType declaration = FunctionType::METHOD;
+        if (method->m_Name.lexeme == "init") {
+            declaration = FunctionType::INITIALIZER;
+        }
+        ResolveFunction(method.get(), declaration);
+    }
+    EndScope();
+    m_CurrentClass = enclosingClass;
+    return nullptr;
+}
+
+std::any Resolver::VisitGet(expr::Get* expr)
+{
+    Resolve(expr->m_Object.get());
+    return nullptr;
+}
+
+std::any Resolver::VisitSet(expr::Set* expr)
+{
+    Resolve(expr->m_Value.get());
+    Resolve(expr->m_Object.get());
+    return nullptr;
+}
+
+std::any Resolver::VisitThis(expr::This* expr)
+{
+    if (m_CurrentClass == ClassType::NONE) {
+        Lox::Error(expr->m_Keyword, "Can't use 'this' outside of a class.");
+    }
+    ResolveLocal(expr, expr->m_Keyword, false);
+    return nullptr;
+}
+
+std::any Resolver::VisitOprSet(expr::OprSet* expr)
+{
+    Resolve(expr->m_Value.get());
+    Resolve(expr->m_Object.get());
     return nullptr;
 }
 
@@ -164,10 +217,7 @@ std::any Resolver::VisitFor(stmt::For* stmt)
     return nullptr;
 }
 
-std::any Resolver::VisitJump(stmt::Jump*)
-{
-    return nullptr;
-}
+std::any Resolver::VisitJump(stmt::Jump*) { return nullptr; }
 
 void Resolver::BeginScope()
 {
@@ -190,10 +240,7 @@ void Resolver::Resolve(const std::vector<std::unique_ptr<stmt::Stmt>>& statement
     }
 }
 
-void Resolver::Resolve(stmt::Stmt* stmt)
-{
-    stmt->Accept(*this);
-}
+void Resolver::Resolve(stmt::Stmt* stmt) { stmt->Accept(*this); }
 
 void Resolver::ResolveFunction(stmt::Function* function, FunctionType funcType)
 {
@@ -223,10 +270,7 @@ void Resolver::ResolveAnonFunction(expr::AnonFunction* function, FunctionType fu
     m_CurrentFunction = enclosingFunction;
 }
 
-void Resolver::Resolve(expr::Expr* expr)
-{
-    expr->Accept(*this);
-}
+void Resolver::Resolve(expr::Expr* expr) { expr->Accept(*this); }
 
 void Resolver::Declare(const Token& name)
 {
@@ -256,8 +300,8 @@ void Resolver::ResolveLocal(expr::Expr* expr, const Token& name, bool isAssign)
         if (m_Scopes[i].contains(name.lexeme)) {
             // if the variable is in the current scope, we pass 0.
             // if it's in the immediately enclosing scope, we pass 1, and so on
-            m_Interpreter->Resolve(expr, numScopes - 1 - i,
-                std::get<2>(m_Scopes[i].at(name.lexeme)));
+            m_Interpreter->Resolve(
+                expr, numScopes - 1 - i, std::get<2>(m_Scopes[i].at(name.lexeme)));
 
             // mark the variable as used
             if (!isAssign)
