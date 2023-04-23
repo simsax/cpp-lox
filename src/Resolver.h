@@ -4,55 +4,56 @@
 
 class Resolver : public expr::Visitor, public stmt::Visitor {
 public:
-	Resolver(Interpreter* interpreter);
+    Resolver(Interpreter* interpreter);
 
-	void Resolve(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
+    void Resolve(const std::vector<std::unique_ptr<stmt::Stmt>>& statements);
 
-	std::any VisitAssign(expr::Assign* expr) override;
-	std::any VisitBinary(expr::Binary* expr) override;
-	std::any VisitLogical(expr::Logical* expr) override;
-	std::any VisitGrouping(expr::Grouping* expr) override;
-	std::any VisitLiteral(expr::Literal* expr) override;
-	std::any VisitUnary(expr::Unary* expr) override;
-	std::any VisitVariable(expr::Variable* expr) override;
-	std::any VisitCall(expr::Call* expr) override;
-	std::any VisitOprAssign(expr::OprAssign* expr) override;
-	std::any VisitTernary(expr::Ternary* expr) override;
-	std::any VisitAnonFunction(expr::AnonFunction* expr) override;
+    std::any VisitAssign(expr::Assign* expr) override;
+    std::any VisitBinary(expr::Binary* expr) override;
+    std::any VisitLogical(expr::Logical* expr) override;
+    std::any VisitGrouping(expr::Grouping* expr) override;
+    std::any VisitLiteral(expr::Literal* expr) override;
+    std::any VisitUnary(expr::Unary* expr) override;
+    std::any VisitVariable(expr::Variable* expr) override;
+    std::any VisitCall(expr::Call* expr) override;
+    std::any VisitOprAssign(expr::OprAssign* expr) override;
+    std::any VisitTernary(expr::Ternary* expr) override;
+    std::any VisitAnonFunction(expr::AnonFunction* expr) override;
 
-	std::any VisitExpression(stmt::Expression* stmt) override;
-	std::any VisitPrint(stmt::Print* stmt) override;
-	std::any VisitVar(stmt::Var* stmt) override;
-	std::any VisitBlock(stmt::Block* stmt) override;
-	std::any VisitIf(stmt::If* stmt) override;
-	std::any VisitWhile(stmt::While* stmt) override;
-	std::any VisitFunction(stmt::Function* stmt) override;
-	std::any VisitReturn(stmt::Return* stmt) override;
-	std::any VisitFor(stmt::For* stmt) override;
-	std::any VisitJump(stmt::Jump* stmt) override;
+    std::any VisitExpression(stmt::Expression* stmt) override;
+    std::any VisitPrint(stmt::Print* stmt) override;
+    std::any VisitVar(stmt::Var* stmt) override;
+    std::any VisitBlock(stmt::Block* stmt) override;
+    std::any VisitIf(stmt::If* stmt) override;
+    std::any VisitWhile(stmt::While* stmt) override;
+    std::any VisitFunction(stmt::Function* stmt) override;
+    std::any VisitReturn(stmt::Return* stmt) override;
+    std::any VisitFor(stmt::For* stmt) override;
+    std::any VisitJump(stmt::Jump* stmt) override;
 
 private:
-	enum class FunctionType : uint8_t {
-		FUNCTION,
-		NONE
-	};
+    enum class FunctionType : uint8_t {
+        FUNCTION,
+        NONE
+    };
 
-	void Resolve(stmt::Stmt* stmt);
-	void BeginScope();
-	void EndScope();
-	void ResolveFunction(stmt::Function* function, FunctionType funcType);
-	void ResolveAnonFunction(expr::AnonFunction* function, FunctionType funcType);
-	void Resolve(expr::Expr* expr);
-	void Declare(const Token& name);
-	void Define(const Token& name);
-	void ResolveLocal(expr::Expr* expr, const Token& name, bool isAssign);
-	void CheckVarUsage();
+    void Resolve(stmt::Stmt* stmt);
+    void BeginScope();
+    void EndScope();
+    void ResolveFunction(stmt::Function* function, FunctionType funcType);
+    void ResolveAnonFunction(expr::AnonFunction* function, FunctionType funcType);
+    void Resolve(expr::Expr* expr);
+    void Declare(const Token& name);
+    void Define(const Token& name);
+    void ResolveLocal(expr::Expr* expr, const Token& name, bool isAssign);
+    void CheckVarUsage();
 
-	Interpreter* m_Interpreter;
-	// first element represent whether the variable initializer has been resolved
-	// second element represents whether the variable has been used
-	// third element represents the unique index of the variable
-	std::vector<std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>> m_Scopes;
-	FunctionType m_CurrentFunction;
-	uint32_t m_VariableIndex;
+    Interpreter* m_Interpreter;
+    // first element represent whether the variable initializer has been resolved
+    // second element represents whether the variable has been used
+    // third element represents the unique index of the variable
+    std::vector<std::unordered_map<std::string, std::tuple<bool, bool, uint32_t>>> m_Scopes;
+    FunctionType m_CurrentFunction;
+    uint32_t m_VariableIndex;
+    uint32_t m_PrevVariableIndex;
 };
