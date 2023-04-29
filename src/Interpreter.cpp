@@ -209,7 +209,14 @@ std::any Interpreter::VisitCall(expr::Call* expr)
 std::any Interpreter::VisitGet(expr::Get* expr)
 {
     std::any object = Evaluate(expr->m_Object.get());
-    // only instances have properties
+    if (object.type() == typeid(std::shared_ptr<LoxCallable>)) {
+        std::shared_ptr<LoxCallable> classCallable
+            = std::any_cast<std::shared_ptr<LoxCallable>>(object);
+        // if it's a class calling its static method
+        if (auto klassObj = dynamic_cast<LoxInstance*>(classCallable.get())) {
+            return klassObj->Get(expr->m_Name);
+        }
+    }
     if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
         std::shared_ptr<LoxInstance> instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
         return instance->Get(expr->m_Name);
@@ -424,13 +431,21 @@ std::any Interpreter::VisitClass(stmt::Class* stmt)
 {
     m_CurrentEnvironment->Define(stmt->m_Name.lexeme, nullptr);
     MethodMap methods;
+    MethodMap classMethods;
     for (const std::unique_ptr<stmt::Function>& method : stmt->m_Methods) {
         methods.insert({ method->m_Name.lexeme,
             std::make_shared<LoxFunction>(
                 method.get(), m_CurrentEnvironment, method->m_Name.lexeme == "init") });
     }
+    for (const std::unique_ptr<stmt::Function>& method : stmt->m_ClassMethods) {
+        classMethods.insert({ method->m_Name.lexeme,
+            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment, false) });
+    }
+    std::shared_ptr<LoxClass> metaClass = std::make_shared<LoxClass>(
+        stmt->m_Name.lexeme + " metaclass", std::move(classMethods), std::shared_ptr<LoxClass> {});
+
     std::shared_ptr<LoxCallable> klass
-        = std::make_shared<LoxClass>(stmt->m_Name.lexeme, std::move(methods));
+        = std::make_shared<LoxClass>(stmt->m_Name.lexeme, std::move(methods), std::move(metaClass));
     m_CurrentEnvironment->Assign(stmt->m_Name, klass);
     return nullptr;
 }

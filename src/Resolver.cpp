@@ -172,6 +172,11 @@ std::any Resolver::VisitClass(stmt::Class* stmt)
         }
         ResolveFunction(method.get(), declaration);
     }
+    // resolve static methods
+    for (const auto& method : stmt->m_ClassMethods) {
+        FunctionType declaration = FunctionType::CLASS_METHOD;
+        ResolveFunction(method.get(), declaration);
+    }
     EndScope();
     m_CurrentClass = enclosingClass;
     return nullptr;
@@ -194,6 +199,9 @@ std::any Resolver::VisitThis(expr::This* expr)
 {
     if (m_CurrentClass == ClassType::NONE) {
         Lox::Error(expr->m_Keyword, "Can't use 'this' outside of a class.");
+    }
+    if (m_CurrentFunction == FunctionType::CLASS_METHOD) {
+        Lox::Error(expr->m_Keyword, "Can't use 'this' inside a class method.");
     }
     ResolveLocal(expr, expr->m_Keyword, false);
     return nullptr;

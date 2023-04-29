@@ -5,7 +5,6 @@
 #include <memory>
 #include <vector>
 
-
 namespace stmt {
 
 class Visitor;
@@ -140,17 +139,21 @@ struct Return : public Stmt {
     std::unique_ptr<expr::Expr> m_Expression;
 };
 
+using MethodVec = std::vector<std::unique_ptr<stmt::Function>>;
+
 struct Class : public Stmt {
-    Class(const Token& name, std::vector<std::unique_ptr<stmt::Function>> methods)
+    Class(const Token& name, MethodVec methods, MethodVec classMethods)
         : m_Name(name)
         , m_Methods(std::move(methods))
+        , m_ClassMethods(std::move(classMethods))
     {
     }
 
     std::any Accept(Visitor& visitor) override;
 
     Token m_Name;
-    std::vector<std::unique_ptr<stmt::Function>> m_Methods;
+    MethodVec m_Methods;
+    MethodVec m_ClassMethods;
 };
 
 struct Jump : public Stmt {

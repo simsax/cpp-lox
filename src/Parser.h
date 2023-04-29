@@ -103,8 +103,6 @@ private:
     std::unique_ptr<stmt::Stmt> ClassDeclaration();
 
     std::vector<std::unique_ptr<stmt::Stmt>> Block();
-    std::unique_ptr<expr::Expr> Assign(
-        expr::Expr* expr, const Token& opr, std::unique_ptr<expr::Expr> value);
 
     const Token& CurrentToken() const;
     const Token& PreviousToken() const;

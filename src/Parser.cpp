@@ -403,12 +403,17 @@ std::unique_ptr<stmt::Stmt> Parser::ClassDeclaration()
 {
     const Token& name = Consume(TokenType::IDENTIFIER, "Expect class name.");
     Consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
-    std::vector<std::unique_ptr<stmt::Function>> methods;
+    stmt::MethodVec methods;
+    stmt::MethodVec classMethods;
     while (CurrentToken().type != TokenType::RIGHT_BRACE && !IsAtEnd()) {
-        methods.emplace_back(Function("method"));
+        if (Match(TokenType::CLASS)) {
+            classMethods.emplace_back(Function("class method"));
+        } else {
+            methods.emplace_back(Function("method"));
+        }
     }
     Consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
-    return std::make_unique<stmt::Class>(name, std::move(methods));
+    return std::make_unique<stmt::Class>(name, std::move(methods), std::move(classMethods));
 }
 std::unique_ptr<stmt::Stmt> Parser::JumpStatement()
 {
