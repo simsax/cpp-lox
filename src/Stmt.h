@@ -112,10 +112,11 @@ struct Var : public Stmt {
 
 struct Function : public Stmt {
     Function(const Token& name, const std::vector<Token>& params,
-        std::vector<std::unique_ptr<stmt::Stmt>> body)
+        std::vector<std::unique_ptr<stmt::Stmt>> body, bool isGetter)
         : m_Name(name)
         , m_Params(params)
         , m_Body(std::move(body))
+        , m_IsGetter(isGetter)
     {
     }
 
@@ -124,6 +125,7 @@ struct Function : public Stmt {
     Token m_Name;
     std::vector<Token> m_Params;
     std::vector<std::unique_ptr<stmt::Stmt>> m_Body;
+    bool m_IsGetter;
 };
 
 struct Return : public Stmt {

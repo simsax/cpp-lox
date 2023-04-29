@@ -98,6 +98,7 @@ private:
     std::unique_ptr<stmt::Stmt> WhileStatement();
     std::unique_ptr<stmt::Stmt> ForStatement();
     std::unique_ptr<stmt::Function> Function(const std::string& kind);
+    std::unique_ptr<stmt::Function> Getter(const Token& name);
     std::unique_ptr<stmt::Stmt> ReturnStatement();
     std::unique_ptr<stmt::Stmt> JumpStatement();
     std::unique_ptr<stmt::Stmt> ClassDeclaration();

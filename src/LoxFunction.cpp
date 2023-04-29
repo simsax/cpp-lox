@@ -2,10 +2,11 @@
 #include "Interpreter.h"
 
 LoxFunction::LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure,
-    bool isInitializer)
+    bool isInitializer, bool isGetter)
     : m_Declaration(declaration)
     , m_Closure(std::move(closure))
     , m_IsInitializer(isInitializer)
+    , m_IsGetter(isGetter)
 {
 }
 
@@ -30,19 +31,15 @@ std::any LoxFunction::Call(Interpreter& interpreter, const std::vector<std::any>
     return nullptr;
 }
 
-size_t LoxFunction::Arity() const
-{
-    return m_Declaration->m_Params.size();
-}
+size_t LoxFunction::Arity() const { return m_Declaration->m_Params.size(); }
 
-std::string LoxFunction::ToString() const
-{
-    return "<fn " + m_Declaration->m_Name.lexeme + ">";
-}
+std::string LoxFunction::ToString() const { return "<fn " + m_Declaration->m_Name.lexeme + ">"; }
 
 std::shared_ptr<LoxCallable> LoxFunction::Bind(std::shared_ptr<LoxInstance> instance)
 {
     std::shared_ptr<Environment> environment = std::make_shared<Environment>(m_Closure);
     environment->DefineLocal(instance);
-    return std::make_shared<LoxFunction>(m_Declaration, environment, m_IsInitializer);
+    return std::make_shared<LoxFunction>(m_Declaration, environment, m_IsInitializer, m_IsGetter);
 }
+
+bool LoxFunction::IsGetter() const { return m_IsGetter; }

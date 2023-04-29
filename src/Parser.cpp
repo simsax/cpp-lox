@@ -372,6 +372,9 @@ std::unique_ptr<stmt::Stmt> Parser::ForStatement()
 std::unique_ptr<stmt::Function> Parser::Function(const std::string& kind)
 {
     const Token& name = Consume(TokenType::IDENTIFIER, "Expect " + kind + " name.");
+    if (Match(TokenType::LEFT_BRACE)) {
+        return Getter(name);
+    }
     Consume(TokenType::LEFT_PAREN, "Expect '(' after " + kind + " name.");
     std::vector<Token> params;
     if (CurrentToken().type != TokenType::RIGHT_PAREN) {
@@ -386,7 +389,7 @@ std::unique_ptr<stmt::Function> Parser::Function(const std::string& kind)
     Consume(TokenType::RIGHT_PAREN, "Expect ')' after parameters.");
     Consume(TokenType::LEFT_BRACE, "Expect '{' before " + kind + " body.");
     std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
-    return std::make_unique<stmt::Function>(name, std::move(params), std::move(body));
+    return std::make_unique<stmt::Function>(name, std::move(params), std::move(body), false);
 }
 
 std::unique_ptr<stmt::Stmt> Parser::ReturnStatement()
@@ -397,6 +400,12 @@ std::unique_ptr<stmt::Stmt> Parser::ReturnStatement()
         value = Expression();
     Consume(TokenType::SEMICOLON, "Expect ';' after return value.");
     return std::make_unique<stmt::Return>(keyword, std::move(value));
+}
+
+std::unique_ptr<stmt::Function> Parser::Getter(const Token& name)
+{
+    std::vector<std::unique_ptr<stmt::Stmt>> body = Block();
+    return std::make_unique<stmt::Function>(name, std::vector<Token> {}, std::move(body), true);
 }
 
 std::unique_ptr<stmt::Stmt> Parser::ClassDeclaration()

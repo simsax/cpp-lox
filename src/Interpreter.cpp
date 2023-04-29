@@ -214,12 +214,12 @@ std::any Interpreter::VisitGet(expr::Get* expr)
             = std::any_cast<std::shared_ptr<LoxCallable>>(object);
         // if it's a class calling its static method
         if (auto klassObj = dynamic_cast<LoxInstance*>(classCallable.get())) {
-            return klassObj->Get(expr->m_Name);
+            return klassObj->Get(expr->m_Name, *this);
         }
     }
     if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
         std::shared_ptr<LoxInstance> instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
-        return instance->Get(expr->m_Name);
+        return instance->Get(expr->m_Name, *this);
     }
 
     throw RuntimeException("Only instances have properties.", expr->m_Name);
@@ -228,9 +228,10 @@ std::any Interpreter::VisitGet(expr::Get* expr)
 std::any Interpreter::VisitSet(expr::Set* expr)
 {
     /*
-                1. Evaluate the object.
-                2. Raise a runtime error if it's not an instance of a class.
-                3. Evaluate the value.
+                                                    1. Evaluate the object.
+                                                    2. Raise a runtime error if it's not an instance
+       of a class.
+                                                    3. Evaluate the value.
     */
     std::any object = Evaluate(expr->m_Object.get());
     if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
@@ -251,7 +252,7 @@ std::any Interpreter::VisitOprSet(expr::OprSet* expr)
         std::any assignmentValue = Evaluate(expr->m_Value.get());
         // in this case the field has to exist (otherwise raise an error),
         // and I get its value from the instance
-        std::any fieldValue = instance->Get(expr->m_Name);
+        std::any fieldValue = instance->Get(expr->m_Name, *this);
 
         switch (expr->m_Opr.type) {
         case TokenType::MINUS_EQUAL:
@@ -375,7 +376,7 @@ std::any Interpreter::VisitFor(stmt::For* stmt)
 std::any Interpreter::VisitFunction(stmt::Function* stmt)
 {
     std::shared_ptr<LoxCallable> loxFunction
-        = std::make_shared<LoxFunction>(stmt, m_CurrentEnvironment, false);
+        = std::make_shared<LoxFunction>(stmt, m_CurrentEnvironment, false, false);
     if (m_CurrentEnvironment == m_Globals)
         m_CurrentEnvironment->Define(stmt->m_Name.lexeme, loxFunction);
     else
@@ -434,12 +435,12 @@ std::any Interpreter::VisitClass(stmt::Class* stmt)
     MethodMap classMethods;
     for (const std::unique_ptr<stmt::Function>& method : stmt->m_Methods) {
         methods.insert({ method->m_Name.lexeme,
-            std::make_shared<LoxFunction>(
-                method.get(), m_CurrentEnvironment, method->m_Name.lexeme == "init") });
+            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment,
+                method->m_Name.lexeme == "init", method->m_IsGetter) });
     }
     for (const std::unique_ptr<stmt::Function>& method : stmt->m_ClassMethods) {
         classMethods.insert({ method->m_Name.lexeme,
-            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment, false) });
+            std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment, false, false) });
     }
     std::shared_ptr<LoxClass> metaClass = std::make_shared<LoxClass>(
         stmt->m_Name.lexeme + " metaclass", std::move(classMethods), std::shared_ptr<LoxClass> {});

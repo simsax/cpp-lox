@@ -9,15 +9,16 @@ class LoxInstance;
 class LoxFunction : public LoxCallable {
 public:
     LoxFunction(stmt::Function* declaration, std::shared_ptr<Environment> closure,
-        bool isInitializer);
-    std::any Call(Interpreter& interpreter,
-        const std::vector<std::any>& arguments) override;
+        bool isInitializer, bool isGetter);
+    std::any Call(Interpreter& interpreter, const std::vector<std::any>& arguments) override;
     size_t Arity() const override;
     std::string ToString() const override;
     std::shared_ptr<LoxCallable> Bind(std::shared_ptr<LoxInstance> instance);
+    bool IsGetter() const;
 
 private:
     stmt::Function* m_Declaration;
     std::shared_ptr<Environment> m_Closure;
     bool m_IsInitializer;
+    bool m_IsGetter;
 };
