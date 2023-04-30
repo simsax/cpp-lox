@@ -138,11 +138,15 @@ std::any Resolver::VisitClass(stmt::Class* stmt)
     Declare(stmt->m_Name);
     Define(stmt->m_Name);
     if (stmt->m_SuperClass != nullptr) {
+        m_CurrentClass = ClassType::SUBCLASS;
         if (stmt->m_Name.lexeme == stmt->m_SuperClass->m_Name.lexeme) {
             Lox::Error(stmt->m_SuperClass->m_Name, "A class can't inherit from itself.");
         }
         Resolve(stmt->m_SuperClass.get());
+        BeginScope();
+        m_Scopes.back().insert({ "super", true });
     }
+
     BeginScope();
     m_Scopes.back().insert({ "this", true });
     for (const auto& method : stmt->m_Methods) {
@@ -153,6 +157,9 @@ std::any Resolver::VisitClass(stmt::Class* stmt)
         ResolveFunction(method.get(), declaration);
     }
     EndScope();
+    if (stmt->m_SuperClass != nullptr) {
+        EndScope();
+    }
     m_CurrentClass = enclosingClass;
     return nullptr;
 }
@@ -174,6 +181,17 @@ std::any Resolver::VisitThis(expr::This* expr)
 {
     if (m_CurrentClass == ClassType::NONE) {
         Lox::Error(expr->m_Keyword, "Can't use 'this' outside of a class.");
+    }
+    ResolveLocal(expr, expr->m_Keyword);
+    return nullptr;
+}
+
+std::any Resolver::VisitSuper(expr::Super* expr)
+{
+    if (m_CurrentClass == ClassType::NONE) {
+        Lox::Error(expr->m_Keyword, "Can't use 'super' outside of a class.");
+    } else if (m_CurrentClass != ClassType::SUBCLASS) {
+        Lox::Error(expr->m_Keyword, "Can't use 'super' in a class with no superclass.");
     }
     ResolveLocal(expr, expr->m_Keyword);
     return nullptr;

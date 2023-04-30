@@ -40,7 +40,8 @@ unary          → ( "!" | "-" ) unary | call ;
 call           → primary ( "(" arguments? ")" | "." IDENTIFIER )* ;
 arguments	   → expression ("," expression)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
-                           | "(" expression ")" | IDENTIFIER ;
+                           | "(" expression ")" | IDENTIFIER
+                           | "super" "." IDENTIFIER ;
 */
 
 template <typename T>

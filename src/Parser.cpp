@@ -142,6 +142,12 @@ std::unique_ptr<expr::Expr> Parser::Primary()
     if (Match(TokenType::THIS)) {
         return std::make_unique<expr::This>(PreviousToken());
     }
+    if (Match(TokenType::SUPER)) {
+        const Token& keyword = PreviousToken();
+        Consume(TokenType::DOT, "Expect '.' after 'super'.");
+        const Token& method = Consume(TokenType::IDENTIFIER, "Expect superclass method name.");
+        return std::make_unique<expr::Super>(keyword, method);
+    }
     throw Error(CurrentToken(), "Expect expression.");
 }
 

@@ -160,6 +160,19 @@ struct This : public Expr {
     Token m_Keyword;
 };
 
+struct Super : public Expr {
+    Super(const Token& keyword, const Token& method)
+        : m_Keyword(keyword)
+        , m_Method(method)
+    {
+    }
+
+    std::any Accept(Visitor& visitor) override;
+
+    Token m_Keyword;
+    Token m_Method;
+};
+
 class Visitor {
 public:
     virtual ~Visitor() = 0;
@@ -174,62 +187,32 @@ public:
     virtual std::any VisitGet(Get* expr) = 0;
     virtual std::any VisitSet(Set* expr) = 0;
     virtual std::any VisitThis(This* expr) = 0;
+    virtual std::any VisitSuper(Super* expr) = 0;
 };
 
 inline Visitor::~Visitor() = default;
 
-inline std::any Assign::Accept(Visitor& visitor)
-{
-    return visitor.VisitAssign(this);
-}
+inline std::any Assign::Accept(Visitor& visitor) { return visitor.VisitAssign(this); }
 
-inline std::any Binary::Accept(Visitor& visitor)
-{
-    return visitor.VisitBinary(this);
-}
+inline std::any Binary::Accept(Visitor& visitor) { return visitor.VisitBinary(this); }
 
-inline std::any Logical::Accept(Visitor& visitor)
-{
-    return visitor.VisitLogical(this);
-}
+inline std::any Logical::Accept(Visitor& visitor) { return visitor.VisitLogical(this); }
 
-inline std::any Grouping::Accept(Visitor& visitor)
-{
-    return visitor.VisitGrouping(this);
-}
+inline std::any Grouping::Accept(Visitor& visitor) { return visitor.VisitGrouping(this); }
 
-inline std::any Literal::Accept(Visitor& visitor)
-{
-    return visitor.VisitLiteral(this);
-}
+inline std::any Literal::Accept(Visitor& visitor) { return visitor.VisitLiteral(this); }
 
-inline std::any Unary::Accept(Visitor& visitor)
-{
-    return visitor.VisitUnary(this);
-}
+inline std::any Unary::Accept(Visitor& visitor) { return visitor.VisitUnary(this); }
 
-inline std::any Variable::Accept(Visitor& visitor)
-{
-    return visitor.VisitVariable(this);
-}
+inline std::any Variable::Accept(Visitor& visitor) { return visitor.VisitVariable(this); }
 
-inline std::any Call::Accept(Visitor& visitor)
-{
-    return visitor.VisitCall(this);
-}
+inline std::any Call::Accept(Visitor& visitor) { return visitor.VisitCall(this); }
 
-inline std::any Get::Accept(Visitor& visitor)
-{
-    return visitor.VisitGet(this);
-}
+inline std::any Get::Accept(Visitor& visitor) { return visitor.VisitGet(this); }
 
-inline std::any Set::Accept(Visitor& visitor)
-{
-    return visitor.VisitSet(this);
-}
+inline std::any Set::Accept(Visitor& visitor) { return visitor.VisitSet(this); }
 
-inline std::any This::Accept(Visitor& visitor)
-{
-    return visitor.VisitThis(this);
-}
+inline std::any This::Accept(Visitor& visitor) { return visitor.VisitThis(this); }
+
+inline std::any Super::Accept(Visitor& visitor) { return visitor.VisitSuper(this); }
 }

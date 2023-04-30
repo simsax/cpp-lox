@@ -13,10 +13,7 @@ public:
     {
     }
 
-    inline const Token& GetToken() const
-    {
-        return m_Token;
-    }
+    inline const Token& GetToken() const { return m_Token; }
 
 private:
     Token m_Token;
@@ -30,10 +27,7 @@ public:
     {
     }
 
-    inline std::any GetValue() const
-    {
-        return m_Value;
-    }
+    inline std::any GetValue() const { return m_Value; }
 
 private:
     std::any m_Value;
@@ -57,6 +51,7 @@ public:
     std::any VisitGet(expr::Get* expr) override;
     std::any VisitSet(expr::Set* expr) override;
     std::any VisitThis(expr::This* expr) override;
+    std::any VisitSuper(expr::Super* expr) override;
 
     std::any VisitExpression(stmt::Expression* stmt) override;
     std::any VisitPrint(stmt::Print* stmt) override;
