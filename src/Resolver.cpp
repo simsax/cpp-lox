@@ -1,5 +1,6 @@
 #include "Resolver.h"
 #include "Lox.h"
+#include <cstddef>
 
 Resolver::Resolver(Interpreter* interpreter)
     : m_Interpreter(interpreter)
@@ -35,10 +36,7 @@ std::any Resolver::VisitGrouping(expr::Grouping* expr)
     return nullptr;
 }
 
-std::any Resolver::VisitLiteral(expr::Literal*)
-{
-    return nullptr;
-}
+std::any Resolver::VisitLiteral(expr::Literal*) { return nullptr; }
 
 std::any Resolver::VisitUnary(expr::Unary* expr)
 {
@@ -139,6 +137,12 @@ std::any Resolver::VisitClass(stmt::Class* stmt)
     m_CurrentClass = ClassType::CLASS;
     Declare(stmt->m_Name);
     Define(stmt->m_Name);
+    if (stmt->m_SuperClass != nullptr) {
+        if (stmt->m_Name.lexeme == stmt->m_SuperClass->m_Name.lexeme) {
+            Lox::Error(stmt->m_SuperClass->m_Name, "A class can't inherit from itself.");
+        }
+        Resolve(stmt->m_SuperClass.get());
+    }
     BeginScope();
     m_Scopes.back().insert({ "this", true });
     for (const auto& method : stmt->m_Methods) {
@@ -175,15 +179,9 @@ std::any Resolver::VisitThis(expr::This* expr)
     return nullptr;
 }
 
-void Resolver::BeginScope()
-{
-    m_Scopes.push_back(std::unordered_map<std::string, bool> {});
-}
+void Resolver::BeginScope() { m_Scopes.push_back(std::unordered_map<std::string, bool> {}); }
 
-void Resolver::EndScope()
-{
-    m_Scopes.pop_back();
-}
+void Resolver::EndScope() { m_Scopes.pop_back(); }
 
 void Resolver::Resolve(const std::vector<std::unique_ptr<stmt::Stmt>>& statements)
 {
@@ -192,10 +190,7 @@ void Resolver::Resolve(const std::vector<std::unique_ptr<stmt::Stmt>>& statement
     }
 }
 
-void Resolver::Resolve(stmt::Stmt* stmt)
-{
-    stmt->Accept(*this);
-}
+void Resolver::Resolve(stmt::Stmt* stmt) { stmt->Accept(*this); }
 
 void Resolver::ResolveFunction(stmt::Function* function, FunctionType funcType)
 {
@@ -211,10 +206,7 @@ void Resolver::ResolveFunction(stmt::Function* function, FunctionType funcType)
     m_CurrentFunction = enclosingFunction;
 }
 
-void Resolver::Resolve(expr::Expr* expr)
-{
-    expr->Accept(*this);
-}
+void Resolver::Resolve(expr::Expr* expr) { expr->Accept(*this); }
 
 void Resolver::Declare(const Token& name)
 {

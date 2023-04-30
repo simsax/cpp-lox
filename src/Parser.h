@@ -11,7 +11,7 @@
 // Statements
 program        → declaration* EOF ;
 declaration	   → varDecl | statement | funDecl | classDecl ;
-classDecl	   → "class" IDENTIFIER "{" function* "}" ;
+classDecl	   → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 funDecl		   → "fun" function ;
 function	   → IDENTIFIER "(" parameters? ")" block ;
 parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
@@ -95,15 +95,13 @@ private:
     ParseException Error(const Token& token, const std::string& message);
     void Synchronize();
 
-    template <IsTokenType... Args>
-    bool Match(Args... args);
+    template <IsTokenType... Args> bool Match(Args... args);
 
     std::vector<Token> m_Tokens;
     std::size_t m_Current;
 };
 
-template <IsTokenType... Args>
-inline bool Parser::Match(Args... args)
+template <IsTokenType... Args> inline bool Parser::Match(Args... args)
 {
     if (((CurrentToken().type == args) || ...)) {
         Advance();

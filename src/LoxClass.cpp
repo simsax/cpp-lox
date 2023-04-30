@@ -2,8 +2,9 @@
 #include "LoxInstance.h"
 #include <memory>
 
-LoxClass::LoxClass(const std::string& name, MethodMap methods)
+LoxClass::LoxClass(const std::string& name, std::shared_ptr<LoxClass> superClass, MethodMap methods)
     : m_Name(name)
+    , m_SuperClass(superClass)
     , m_Methods(std::move(methods))
 {
 }
@@ -28,20 +29,18 @@ size_t LoxClass::Arity() const
     return initializer->Arity();
 }
 
-std::string LoxClass::ToString() const
-{
-    return "<class " + m_Name + ">";
-}
+std::string LoxClass::ToString() const { return "<class " + m_Name + ">"; }
 
-std::string LoxClass::GetName() const
-{
-    return m_Name;
-}
+std::string LoxClass::GetName() const { return m_Name; }
 
 std::shared_ptr<LoxFunction> LoxClass::FindMethod(const std::string& name) const
 {
     if (m_Methods.contains(name)) {
         return m_Methods.at(name);
     }
+    if (m_SuperClass != nullptr) {
+        return m_SuperClass->FindMethod(name);
+    }
+
     return nullptr;
 }

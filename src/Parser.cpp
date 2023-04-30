@@ -17,10 +17,7 @@ std::vector<std::unique_ptr<stmt::Stmt>> Parser::Parse()
     return statements;
 }
 
-std::unique_ptr<expr::Expr> Parser::Expression()
-{
-    return Assignment();
-}
+std::unique_ptr<expr::Expr> Parser::Expression() { return Assignment(); }
 
 std::unique_ptr<expr::Expr> Parser::Assignment()
 {
@@ -80,8 +77,8 @@ std::unique_ptr<expr::Expr> Parser::Comparison()
 {
     std::unique_ptr<expr::Expr> expr = Term();
 
-    while (Match(TokenType::GREATER, TokenType::GREATER_EQUAL,
-        TokenType::LESS, TokenType::LESS_EQUAL)) {
+    while (Match(
+        TokenType::GREATER, TokenType::GREATER_EQUAL, TokenType::LESS, TokenType::LESS_EQUAL)) {
         const Token& opr = PreviousToken();
         std::unique_ptr<expr::Expr> right = Term();
         expr = std::make_unique<expr::Binary>(std::move(expr), opr, std::move(right));
@@ -257,7 +254,8 @@ std::unique_ptr<stmt::Stmt> Parser::IfStatement()
     std::unique_ptr<stmt::Stmt> elseBranch = nullptr;
     if (Match(TokenType::ELSE))
         elseBranch = Statement();
-    return std::make_unique<stmt::If>(std::move(condition), std::move(thenBranch), std::move(elseBranch));
+    return std::make_unique<stmt::If>(
+        std::move(condition), std::move(thenBranch), std::move(elseBranch));
 }
 
 std::unique_ptr<stmt::Stmt> Parser::WhileStatement()
@@ -346,29 +344,25 @@ std::unique_ptr<stmt::Stmt> Parser::ReturnStatement()
 std::unique_ptr<stmt::Stmt> Parser::ClassDeclaration()
 {
     const Token& name = Consume(TokenType::IDENTIFIER, "Expect class name.");
+    std::unique_ptr<expr::Variable> superClass;
+    if (Match(TokenType::LESS)) {
+        const Token& superClassName = Consume(TokenType::IDENTIFIER, "Expect superclass name.");
+        superClass = std::make_unique<expr::Variable>(superClassName);
+    }
     Consume(TokenType::LEFT_BRACE, "Expect '{' before class body.");
     std::vector<std::unique_ptr<stmt::Function>> methods;
     while (CurrentToken().type != TokenType::RIGHT_BRACE && !IsAtEnd()) {
         methods.emplace_back(Function("method"));
     }
     Consume(TokenType::RIGHT_BRACE, "Expect '}' after class body.");
-    return std::make_unique<stmt::Class>(name, std::move(methods));
+    return std::make_unique<stmt::Class>(name, std::move(superClass), std::move(methods));
 }
 
-const Token& Parser::CurrentToken() const
-{
-    return m_Tokens[m_Current];
-}
+const Token& Parser::CurrentToken() const { return m_Tokens[m_Current]; }
 
-const Token& Parser::PreviousToken() const
-{
-    return m_Tokens[m_Current - 1];
-}
+const Token& Parser::PreviousToken() const { return m_Tokens[m_Current - 1]; }
 
-bool Parser::IsAtEnd() const
-{
-    return CurrentToken().type == TokenType::END;
-}
+bool Parser::IsAtEnd() const { return CurrentToken().type == TokenType::END; }
 
 const Token& Parser::Advance()
 {
