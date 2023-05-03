@@ -4,8 +4,8 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # User-specific files
-TODO
-TODO.txt
+*/TODO
+*/TODO.txt
 /test
 .idea
 .vscode
@@ -13,15 +13,15 @@ TODO.txt
 /cmake-build-release
 /build
 /Cmake
-CMakeSettings.json
+*/CMakeSettings.json
 *.rsuser
 *.suo
 *.user
 *.userosscache
 *.sln.docstates
 *.lox
-src/utils/*
-compile_commands.json
+*/utils/*
+*/compile_commands.json
 
 # User-specific files (MonoDevelop/Xamarin Studio)
 *.userprefs
