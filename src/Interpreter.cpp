@@ -4,6 +4,7 @@
 #include "LoxCallable.h"
 #include "LoxClass.h"
 #include "LoxInstance.h"
+#include <any>
 #include <memory>
 #include <regex>
 #include <stdint.h>
@@ -228,11 +229,11 @@ std::any Interpreter::VisitGet(expr::Get* expr)
 std::any Interpreter::VisitSet(expr::Set* expr)
 {
     /*
-                                                    1. Evaluate the object.
-                                                    2. Raise a runtime error if it's not an instance
-       of a class.
-                                                    3. Evaluate the value.
-    */
+                1. Evaluate the object.
+                2. Raise a runtime error if it's not an instance
+                        of a class.
+                3. Evaluate the value.
+        */
     std::any object = Evaluate(expr->m_Object.get());
     if (object.type() == typeid(std::shared_ptr<LoxInstance>)) {
         std::shared_ptr<LoxInstance> instance = std::any_cast<std::shared_ptr<LoxInstance>>(object);
@@ -430,7 +431,28 @@ std::any Interpreter::VisitReturn(stmt::Return* stmt)
 
 std::any Interpreter::VisitClass(stmt::Class* stmt)
 {
+    std::any superClass;
+    std::shared_ptr<LoxClass> superClassPtr;
+    if (stmt->m_SuperClass != nullptr) {
+        superClass = Evaluate(stmt->m_SuperClass.get());
+        if (superClass.type() == typeid(std::shared_ptr<LoxCallable>)) {
+            std::shared_ptr<LoxCallable> callable
+                = std::any_cast<std::shared_ptr<LoxCallable>>(superClass);
+            if (auto super = dynamic_pointer_cast<LoxClass>(callable)) {
+                superClassPtr = super;
+            } else {
+                throw RuntimeException("Superclass must be a class.", stmt->m_SuperClass->m_Name);
+            }
+        } else {
+            throw RuntimeException("Superclass must be a class.", stmt->m_SuperClass->m_Name);
+        }
+    }
     m_CurrentEnvironment->Define(stmt->m_Name.lexeme, nullptr);
+    if (stmt->m_SuperClass != nullptr) {
+        // push a new environment
+        m_CurrentEnvironment = std::make_shared<Environment>(m_CurrentEnvironment);
+        m_CurrentEnvironment->Define("super", superClassPtr);
+    }
     MethodMap methods;
     MethodMap classMethods;
     for (const std::unique_ptr<stmt::Function>& method : stmt->m_Methods) {
@@ -442,16 +464,42 @@ std::any Interpreter::VisitClass(stmt::Class* stmt)
         classMethods.insert({ method->m_Name.lexeme,
             std::make_shared<LoxFunction>(method.get(), m_CurrentEnvironment, false, false) });
     }
-    std::shared_ptr<LoxClass> metaClass = std::make_shared<LoxClass>(
-        stmt->m_Name.lexeme + " metaclass", std::move(classMethods), std::shared_ptr<LoxClass> {});
-
-    std::shared_ptr<LoxCallable> klass
-        = std::make_shared<LoxClass>(stmt->m_Name.lexeme, std::move(methods), std::move(metaClass));
+    std::shared_ptr<LoxClass> metaClass
+        = std::make_shared<LoxClass>(stmt->m_Name.lexeme + " metaclass", superClassPtr,
+            std::move(classMethods), std::shared_ptr<LoxClass> {});
+    std::shared_ptr<LoxCallable> klass = std::make_shared<LoxClass>(
+        stmt->m_Name.lexeme, superClassPtr, std::move(methods), std::move(metaClass));
+    if (stmt->m_SuperClass != nullptr) {
+        // pop the environment
+        m_CurrentEnvironment = m_CurrentEnvironment->GetEnclosing();
+    }
     m_CurrentEnvironment->Assign(stmt->m_Name, klass);
     return nullptr;
 }
 
 std::any Interpreter::VisitThis(expr::This* expr) { return LookUpVariable(expr->m_Keyword, expr); }
+
+std::any Interpreter::VisitSuper(expr::Super* expr)
+{
+    auto resolvedData = m_Locals.at(expr);
+    std::shared_ptr<LoxClass> superClass = std::any_cast<std::shared_ptr<LoxClass>>(
+        m_CurrentEnvironment->GetAt(resolvedData.scopeHops, resolvedData.variableIndex));
+    /*
+    "Inside the super expression, we don’t have a convenient node for the resolver to
+    hang the number of hops to this on. Fortunately, we do control the layout of the environment
+    chains. The environment where “this” is bound is always right inside the environment where we
+    store “super”."
+    */
+    std::shared_ptr<LoxInstance> object = std::any_cast<std::shared_ptr<LoxInstance>>(
+        m_CurrentEnvironment->GetAt(resolvedData.scopeHops - 1, 0));
+
+    std::shared_ptr<LoxFunction> method = superClass->FindMethod(expr->m_Method.lexeme);
+    if (method == nullptr) {
+        throw RuntimeException(
+            "Undefined property '" + expr->m_Method.lexeme + "'.", expr->m_Method);
+    }
+    return method->Bind(object);
+}
 
 void Interpreter::CheckNumberOperand(const Token& opr, const std::any& operand) const
 {

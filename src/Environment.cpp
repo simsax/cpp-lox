@@ -2,6 +2,8 @@
 #include <stdint.h>
 #include "Environment.h"
 #include "Interpreter.h"
+#include <memory>
+#include <stdexcept>
 
 Environment::Environment() :
 	m_Enclosing(nullptr)
@@ -63,9 +65,11 @@ void Environment::AssignAt(uint32_t distance, uint32_t variableIndex, const std:
 
 Environment* Environment::Ancestor(int distance)
 {
-	Environment* environment = this;
-	for (int i = 0; i < distance; i++) {
-		environment = environment->m_Enclosing.get();
-	}
-	return environment;
+    Environment* environment = this;
+    for (int i = 0; i < distance; i++) {
+        environment = environment->m_Enclosing.get();
+    }
+    return environment;
 }
+
+std::shared_ptr<Environment> Environment::GetEnclosing() { return m_Enclosing; }

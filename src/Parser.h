@@ -11,7 +11,7 @@
 // Statements
 program        → declaration* EOF ;
 declaration	   → varDecl | statement | funDecl | classDecl ;
-classDecl	   → "class" IDENTIFIER "{" function* "}" ;
+classDecl	   → "class" IDENTIFIER ( "<" IDENTIFIER )? "{" function* "}" ;
 funDecl		   → "fun" function ;
 function	   → IDENTIFIER "(" parameters? ")" block ;
 parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
@@ -53,7 +53,8 @@ parameters	   → IDENTIFIER ("," IDENTIFIER)* ;
 primary        → NUMBER | STRING | "true" | "false" | "nil"
                            | "(" expression ")" | IDENTIFIER ;
 primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
-                                                   | "(" expression ")" | IDENTIFIER ;
+                           | "(" expression ")" | IDENTIFIER
+                           | "super" "." IDENTIFIER ;
 */
 
 template <typename T>

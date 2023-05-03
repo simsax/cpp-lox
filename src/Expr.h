@@ -224,6 +224,19 @@ struct This : public Expr {
     Token m_Keyword;
 };
 
+struct Super : public Expr {
+    Super(const Token& keyword, const Token& method)
+        : m_Keyword(keyword)
+        , m_Method(method)
+    {
+    }
+
+    std::any Accept(Visitor& visitor) override;
+
+    Token m_Keyword;
+    Token m_Method;
+};
+
 class Visitor {
 public:
     virtual ~Visitor() = 0;
@@ -242,6 +255,7 @@ public:
     virtual std::any VisitSet(Set* expr) = 0;
     virtual std::any VisitThis(This* expr) = 0;
     virtual std::any VisitOprSet(OprSet* expr) = 0;
+    virtual std::any VisitSuper(Super* expr) = 0;
 };
 
 inline Visitor::~Visitor() = default;
@@ -275,4 +289,5 @@ inline std::any Set::Accept(Visitor& visitor) { return visitor.VisitSet(this); }
 inline std::any This::Accept(Visitor& visitor) { return visitor.VisitThis(this); }
 
 inline std::any OprSet::Accept(Visitor& visitor) { return visitor.VisitOprSet(this); }
+inline std::any Super::Accept(Visitor& visitor) { return visitor.VisitSuper(this); }
 }

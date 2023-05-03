@@ -2,9 +2,11 @@
 #include <stdint.h>
 #include <unordered_map>
 #include <any>
+#include <memory>
 #include <string>
-#include "LoxCallable.h"
+#include <unordered_map>
 #include "Token.h"
+
 
 class Environment {
 public:
@@ -17,6 +19,7 @@ public:
 	std::any GetAt(uint32_t distance, uint32_t variableIndex);
 	void AssignAt(uint32_t distance, uint32_t variableIndex, const std::any& value);
 	Environment* Ancestor(int distance);
+	std::shared_ptr<Environment> GetEnclosing();
 
 private:
 	std::shared_ptr<Environment> m_Enclosing;

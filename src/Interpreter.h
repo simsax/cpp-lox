@@ -74,6 +74,7 @@ public:
     std::any VisitSet(expr::Set* expr) override;
     std::any VisitThis(expr::This* expr) override;
     std::any VisitOprSet(expr::OprSet* expr) override;
+    std::any VisitSuper(expr::Super* expr) override;
 
     std::any VisitExpression(stmt::Expression* stmt) override;
     std::any VisitPrint(stmt::Print* stmt) override;
