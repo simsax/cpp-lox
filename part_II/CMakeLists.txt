@@ -12,4 +12,5 @@ add_executable(
 	"src/chunk.c"
 	"src/debug.h"
 	"src/debug.c"
+	"src/value.h"
 )

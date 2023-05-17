@@ -11,7 +11,7 @@
 .vscode
 /cmake-build-debug
 /cmake-build-release
-/build
+*/build
 /Cmake
 */CMakeSettings.json
 *.rsuser
