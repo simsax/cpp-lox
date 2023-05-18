@@ -13,4 +13,5 @@ add_executable(
 	"src/debug.h"
 	"src/debug.c"
 	"src/value.h"
+	"src/value.c"
 )
