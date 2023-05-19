@@ -13,6 +13,19 @@ void init_chunk(Chunk* chunk)
     init_value_array(&chunk->constants);
 }
 
+// uses run-length encoding for line numbers
+static void write_line(Chunk* chunk, int line)
+{
+    while (chunk->lines_capacity < line) {
+        int old_capacity = chunk->lines_capacity;
+        chunk->lines_capacity = GROW_CAPACITY(old_capacity);
+        chunk->lines = GROW_ARRAY(int, chunk->lines, old_capacity, chunk->lines_capacity);
+        memset(
+            &chunk->lines[old_capacity], 0, (chunk->lines_capacity - old_capacity) * sizeof(int));
+    }
+    chunk->lines[line - 1]++;
+}
+
 void write_chunk(Chunk* chunk, uint8_t byte, int line)
 {
     assert(line > 0);
@@ -21,16 +34,9 @@ void write_chunk(Chunk* chunk, uint8_t byte, int line)
         chunk->capacity = GROW_CAPACITY(old_capacity);
         chunk->code = GROW_ARRAY(uint8_t, chunk->code, old_capacity, chunk->capacity);
     }
-    while (chunk->lines_capacity < line) {
-        int old_capacity = chunk->lines_capacity;
-        chunk->lines_capacity = GROW_CAPACITY(old_capacity);
-        chunk->lines = GROW_ARRAY(int, chunk->lines, old_capacity, chunk->lines_capacity);
-        memset(
-            &chunk->lines[old_capacity], 0, (chunk->lines_capacity - old_capacity) * sizeof(int));
-    }
     chunk->code[chunk->count] = byte;
-    chunk->lines[line - 1]++;
     chunk->count++;
+    write_line(chunk, line);
 }
 
 void free_chunk(Chunk* chunk)
@@ -56,4 +62,14 @@ int get_line(Chunk* chunk, int index)
         line_count++;
     }
     return line_count;
+}
+
+void write_constant(Chunk* chunk, Value value, int line)
+{
+    int constant_index = add_constant(chunk, value);
+    write_chunk(chunk, OP_CONSTANT_LONG, line);
+    // constant_index is 24 bit
+    for (int opr = 0; opr < 3; opr++) {
+        write_chunk(chunk, constant_index >> (8 * opr) & 0xFF, line);
+    }
 }

@@ -28,6 +28,19 @@ static int constant_instruction(const char* name, Chunk* chunk, int offset)
     return offset + 2;
 }
 
+static int constant_long_instruction(const char* name, Chunk* chunk, int offset)
+{
+    int constant_index = 0;
+    for (int opr = 0; opr < 3; opr++) {
+        constant_index |= chunk->code[offset + 1 + opr] << (8 * opr);
+    }
+    printf("%-16s %4d '", name, constant_index);
+    print_value(chunk->constants.values[constant_index]);
+    printf("'\n");
+    // OP_CONSTANT_LONG is 4 bytes (opcode, operand_1, operand_2, operand_3)
+    return offset + 4;
+}
+
 int disassemble_instruction(Chunk* chunk, int offset)
 {
     printf("%04d ", offset);
@@ -41,6 +54,8 @@ int disassemble_instruction(Chunk* chunk, int offset)
     switch (instruction) {
     case OP_CONSTANT:
         return constant_instruction("OP_CONSTANT", chunk, offset);
+    case OP_CONSTANT_LONG:
+        return constant_long_instruction("OP_CONSTANT_LONG", chunk, offset);
     case OP_RETURN:
         return simple_instruction("OP_RETURN", offset);
     default:
