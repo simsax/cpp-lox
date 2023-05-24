@@ -1,10 +1,14 @@
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
+#include "arena.h"
+#include "memory.h"
 #include <stdio.h>
+#include <assert.h>
 
 int main(int argc, const char* argv[])
 {
+    init_arenas();
     Chunk chunk;
     init_chunk(&chunk);
 
@@ -18,6 +22,6 @@ int main(int argc, const char* argv[])
 
     write_chunk(&chunk, OP_RETURN, 123);
     disassemble_chunk(&chunk, "test chunk");
-    free_chunk(&chunk);
+    free_arenas();
     return 0;
 }
