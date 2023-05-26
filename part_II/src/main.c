@@ -15,22 +15,15 @@ int main(int argc, const char* argv[])
     init_chunk(&chunk);
 
     for (int i = 0; i < 1055; i++) {
-        write_constant(&chunk, i, 124);
+        write_constant(&chunk, i, 123);
     }
 
-    int constant = add_constant(&chunk, 1.2);
-    write_chunk(&chunk, OP_CONSTANT, 123);
-    write_chunk(&chunk, constant, 123);
-
-    constant = add_constant(&chunk, 3.4);
-    write_chunk(&chunk, OP_CONSTANT, 123);
-    write_chunk(&chunk, constant, 123);
+    write_constant(&chunk, 1.2, 123);
+    write_constant(&chunk, 3.4, 123);
 
     write_chunk(&chunk, OP_ADD, 123);
 
-    constant = add_constant(&chunk, 5.6);
-    write_chunk(&chunk, OP_CONSTANT, 123);
-    write_chunk(&chunk, constant, 123);
+    write_constant(&chunk, 5.6, 123);
 
     write_chunk(&chunk, OP_DIVIDE, 123);
     write_chunk(&chunk, OP_NEGATE, 123);
