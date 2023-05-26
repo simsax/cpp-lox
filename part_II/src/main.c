@@ -14,22 +14,17 @@ int main(int argc, const char* argv[])
     Chunk chunk;
     init_chunk(&chunk);
 
-    for (int i = 0; i < 1055; i++) {
-        write_constant(&chunk, i, 123);
+    for (int i = 0; i < 1000000; i++) {
+        write_constant(&chunk, 5.6, 123);
+        write_chunk(&chunk, OP_NEGATE, 123);
     }
 
-    write_constant(&chunk, 1.2, 123);
-    write_constant(&chunk, 3.4, 123);
-
-    write_chunk(&chunk, OP_ADD, 123);
-
-    write_constant(&chunk, 5.6, 123);
-
-    write_chunk(&chunk, OP_DIVIDE, 123);
-    write_chunk(&chunk, OP_NEGATE, 123);
+    write_constant(&chunk, 5, 123);
+    write_constant(&chunk, 5, 123);
+    write_chunk(&chunk, OP_MULTIPLY, 123);
 
     write_chunk(&chunk, OP_RETURN, 123);
-    interpret(&chunk);
+    BENCHMARK_FUNC(interpret, &chunk);
     free_VM();
     free_arenas();
     return 0;
