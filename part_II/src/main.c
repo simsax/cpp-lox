@@ -3,25 +3,41 @@
 #include "debug.h"
 #include "arena.h"
 #include "memory.h"
+#include "vm.h"
 #include <stdio.h>
 #include <assert.h>
 
 int main(int argc, const char* argv[])
 {
     init_arenas();
+    init_VM();
     Chunk chunk;
     init_chunk(&chunk);
-
-    int constant = add_constant(&chunk, 1.2);
-    write_chunk(&chunk, OP_CONSTANT, 123);
-    write_chunk(&chunk, constant, 123);
 
     for (int i = 0; i < 1055; i++) {
         write_constant(&chunk, i, 124);
     }
 
+    int constant = add_constant(&chunk, 1.2);
+    write_chunk(&chunk, OP_CONSTANT, 123);
+    write_chunk(&chunk, constant, 123);
+
+    constant = add_constant(&chunk, 3.4);
+    write_chunk(&chunk, OP_CONSTANT, 123);
+    write_chunk(&chunk, constant, 123);
+
+    write_chunk(&chunk, OP_ADD, 123);
+
+    constant = add_constant(&chunk, 5.6);
+    write_chunk(&chunk, OP_CONSTANT, 123);
+    write_chunk(&chunk, constant, 123);
+
+    write_chunk(&chunk, OP_DIVIDE, 123);
+    write_chunk(&chunk, OP_NEGATE, 123);
+
     write_chunk(&chunk, OP_RETURN, 123);
-    disassemble_chunk(&chunk, "test chunk");
+    interpret(&chunk);
+    free_VM();
     free_arenas();
     return 0;
 }

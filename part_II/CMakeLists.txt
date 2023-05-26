@@ -16,4 +16,6 @@ add_executable(
 	"src/value.c"
 	"src/arena.h"
 	"src/arena.c"
+	"src/vm.h"
+	"src/vm.c"
 )
