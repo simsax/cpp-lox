@@ -13,11 +13,11 @@ typedef struct {
     Value stack[STACK_MAX];
 } VM;
 
-typedef enum { INTERPRET_OK, INTEPRET_COMPILE_ERROR, INTERPET_RUNTIME_ERROR } InterpretResult;
+typedef enum { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR } InterpretResult;
 
 void init_VM();
 void free_VM();
-InterpretResult interpret(Chunk* chunk);
+InterpretResult interpret(const char* source);
 void push(Value value);
 Value pop();
 

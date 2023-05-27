@@ -16,4 +16,8 @@ add_executable(
 	"src/value.c"
 	"src/vm.h"
 	"src/vm.c"
+	"src/compiler.h"
+	"src/compiler.c"
+	"src/scanner.h"
+	"src/scanner.c"
 )
