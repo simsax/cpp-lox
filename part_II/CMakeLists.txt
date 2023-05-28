@@ -18,4 +18,8 @@ add_executable(
 	"src/arena.c"
 	"src/vm.h"
 	"src/vm.c"
+	"src/compiler.h"
+	"src/compiler.c"
+	"src/scanner.h"
+	"src/scanner.c"
 )
