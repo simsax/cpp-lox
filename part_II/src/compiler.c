@@ -175,18 +175,6 @@ static uint8_t make_constant(Value value)
         return 0;
     }
 
-    bool compile(const char* source, Chunk* chunk)
-    {
-        init_scanner(source);
-        compiling_chunk = chunk;
-        parser.had_error = false;
-        parser.panic_mode = false;
-        advance();
-        expression();
-        consume(TOKEN_EOF, "Expect end of expression.");
-        end_compiler();
-        return !parser.had_error;
-    }
     return (uint8_t)constant_index;
 }
 
