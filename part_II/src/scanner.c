@@ -242,6 +242,10 @@ Token scan_token()
         return make_token(match('=') ? TOKEN_GREATER_EQUAL : TOKEN_GREATER);
     case '"':
         return string();
+    case '?':
+        return make_token(TOKEN_QUESTION_MARK);
+    case ':':
+        return make_token(TOKEN_COLON);
     default:
         break;
     }
