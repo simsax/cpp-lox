@@ -126,11 +126,22 @@ static InterpretResult run()
             TOP_STACK_VAL = BOOL_VAL(values_equal(TOP_STACK_VAL, b));
             break;
         }
+        case OP_NOT_EQUAL: {
+            Value b = pop();
+            TOP_STACK_VAL = BOOL_VAL(!values_equal(TOP_STACK_VAL, b));
+            break;
+        }
         case OP_GREATER:
             BINARY_OP(BOOL_VAL, >);
             break;
         case OP_LESS:
             BINARY_OP(BOOL_VAL, <);
+            break;
+        case OP_GREATER_EQUAL:
+            BINARY_OP(BOOL_VAL, >=);
+            break;
+        case OP_LESS_EQUAL:
+            BINARY_OP(BOOL_VAL, <=);
             break;
         default:
             break;
