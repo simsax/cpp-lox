@@ -20,4 +20,6 @@ add_executable(
 	"src/compiler.c"
 	"src/scanner.h"
 	"src/scanner.c"
+	"src/object.h"
+	"src/object.c"
 )

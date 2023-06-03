@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "common.h"
+#include "object.h"
 #include "compiler.h"
 #include "scanner.h"
 #include "chunk.h"
@@ -241,6 +242,12 @@ static void literal()
     }
 }
 
+static void string()
+{
+    // +1 and -2 trim the leading and trailing quotation marks
+    emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
 bool compile(const char* source, Chunk* chunk)
 {
     init_scanner(source);
@@ -275,7 +282,7 @@ static ParseRule rules[] = {
     [TOKEN_LESS] = { NULL, binary, PREC_COMPARISON },
     [TOKEN_LESS_EQUAL] = { NULL, binary, PREC_COMPARISON },
     [TOKEN_IDENTIFIER] = { NULL, NULL, PREC_NONE },
-    [TOKEN_STRING] = { NULL, NULL, PREC_NONE },
+    [TOKEN_STRING] = { string, NULL, PREC_NONE },
     [TOKEN_NUMBER] = { number, NULL, PREC_NONE },
     [TOKEN_AND] = { NULL, NULL, PREC_NONE },
     [TOKEN_CLASS] = { NULL, NULL, PREC_NONE },
