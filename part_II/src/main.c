@@ -78,6 +78,6 @@ int main(int argc, const char* argv[])
         exit(64);
     }
     free_VM();
-    free_arenas();
+    free_dynamic_arena();
     return 0;
 }
