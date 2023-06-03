@@ -20,7 +20,7 @@ struct Obj {
 struct ObjString {
     Obj obj;
     int length;
-    char* chars;
+    char chars[];
 };
 
 static inline bool is_obj_type(Value value, ObjType obj_type)

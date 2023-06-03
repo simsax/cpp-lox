@@ -29,7 +29,6 @@ void free_generic_arena() { arena_free(arenas.generic); }
 void* reallocate(void* pointer, size_t old_size, size_t new_size)
 {
     // TODO: implement realloc
-    assert(pointer == NULL);
     if (new_size == 0) {
         // TODO: generic heap implementation,
         // header before each block to track the size, free adds the block to a free

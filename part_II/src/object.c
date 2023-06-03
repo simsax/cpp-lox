@@ -17,23 +17,22 @@ static Obj* allocate_object(size_t size, ObjType type)
     return object;
 }
 
-static ObjString* allocate_string(char* chars, int length)
+ObjString* copy_string(const char* chars, int length)
 {
-    ObjString* string = ALLOCATE_OBJ(ObjString, OBJ_STRING);
-    string->chars = chars;
+    ObjString* string
+        = (ObjString*)allocate_object(sizeof(ObjString) + (length + 1) * sizeof(char), OBJ_STRING);
     string->length = length;
+    memcpy(string->chars, chars, length);
+    string->chars[length] = '\0';
     return string;
 }
 
-ObjString* copy_string(const char* chars, int length)
+ObjString* take_string(char* chars, int length)
 {
-    char* heap_chars = ALLOCATE(char, length + 1);
-    memcpy(heap_chars, chars, length);
-    heap_chars[length] = '\0';
-    return allocate_string(heap_chars, length);
+    ObjString* string = copy_string(chars, length);
+    FREE(char, chars);
+    return string;
 }
-
-ObjString* take_string(char* chars, int length) { return allocate_string(chars, length); }
 
 void print_object(Value value)
 {
