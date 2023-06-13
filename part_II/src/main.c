@@ -66,6 +66,7 @@ static void run_file(const char* path)
 
 int main(int argc, const char* argv[])
 {
+    /*
     init_arenas();
     init_VM();
 
@@ -79,5 +80,16 @@ int main(int argc, const char* argv[])
     }
     free_VM();
     free_dynamic_arena();
+    */
+    Arena* arena = arena_create();
+    arena_print(arena);
+    uint8_t* it = arena_malloc(arena, 1);
+    arena_print(arena);
+    int* arr = arena_malloc(arena, 10 * sizeof(int));
+    for (int i = 0; i < 10; i++)
+        arr[i] = i;
+    arena_print(arena);
+    for (int i = 0; i < 10; i++)
+        printf("arr[%d] = %d\n", i, arr[i]);
     return 0;
 }
