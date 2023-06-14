@@ -4,7 +4,6 @@
 #include "common.h"
 #include "chunk.h"
 #include "debug.h"
-#include "arena.h"
 #include "memory.h"
 #include "vm.h"
 #include <stdio.h>
@@ -66,7 +65,6 @@ static void run_file(const char* path)
 
 int main(int argc, const char* argv[])
 {
-    init_arenas();
     init_VM();
 
     if (argc == 1) {
@@ -78,6 +76,5 @@ int main(int argc, const char* argv[])
         exit(64);
     }
     free_VM();
-    free_dynamic_arena();
     return 0;
 }

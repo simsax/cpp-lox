@@ -14,8 +14,6 @@ add_executable(
 	"src/debug.c"
 	"src/value.h"
 	"src/value.c"
-	"src/arena.h"
-	"src/arena.c"
 	"src/vm.h"
 	"src/vm.c"
 	"src/compiler.h"
