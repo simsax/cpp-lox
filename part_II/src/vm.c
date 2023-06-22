@@ -49,9 +49,14 @@ void init_VM()
 {
     reset_stack();
     vm.objects = NULL;
+    init_table(&vm.strings);
 }
 
-void free_VM() { free_objects(); }
+void free_VM()
+{
+    free_table(&vm.strings);
+    free_objects();
+}
 
 static InterpretResult run()
 {
