@@ -137,13 +137,13 @@ ObjString* table_find_string(Table* table, const char* chars, int length, uint32
             if (IS_NIL(entry->value)) {
                 // empty entry
                 return NULL;
-            } else if (entry->key->length == length && entry->key->hash == hash
-                && memcmp(entry->key->chars, chars, length) == 0) {
-                return entry->key;
             }
-
-            // linear probing
-            index = (index + 1) % table->capacity;
+        } else if (entry->key->length == length && entry->key->hash == hash
+            && memcmp(entry->key->chars, chars, length) == 0) {
+            return entry->key;
         }
+
+        // linear probing
+        index = (index + 1) % table->capacity;
     }
 }
