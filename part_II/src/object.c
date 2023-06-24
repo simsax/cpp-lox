@@ -68,3 +68,5 @@ void print_object(Value value)
         break;
     }
 }
+
+ObjString* make_string(const char* chars) { return copy_string(chars, strlen(chars)); }

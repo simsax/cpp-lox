@@ -1,6 +1,7 @@
 #include "table.h"
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 #include "memory.h"
 #include "object.h"
 #include "table.h"
@@ -145,5 +146,27 @@ ObjString* table_find_string(Table* table, const char* chars, int length, uint32
 
         // linear probing
         index = (index + 1) % table->capacity;
+    }
+}
+
+void print_table(Table* table)
+{
+    if (table->count == 0) {
+        printf("Table is empty.\n");
+        return;
+    }
+    for (int i = 0; i < table->capacity; i++) {
+        printf("%-4d | ", i);
+        Entry* entry = &table->entries[i];
+        if (entry->key == NULL) {
+            if (IS_NIL(entry->value))
+                printf("NULL");
+            else
+                printf("TOMBSTONE");
+        } else {
+            printf("%s: ", entry->key->chars);
+            print_value(entry->value);
+        }
+        printf("\n");
     }
 }

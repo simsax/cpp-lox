@@ -9,6 +9,13 @@
 #include <stdio.h>
 #include <assert.h>
 
+#define HASH_TEST 1
+
+#if HASH_TEST
+#include "table.h"
+#include "object.h"
+#endif
+
 static void repl()
 {
     char line[1024];
@@ -65,6 +72,23 @@ static void run_file(const char* path)
 
 int main(int argc, const char* argv[])
 {
+#if HASH_TEST
+    Table table;
+    init_table(&table);
+    for (int i = 0; i < 100; i++) {
+        char buf[10];
+        sprintf(buf, "%d", i);
+        ObjString* key = make_string(buf);
+        Value val = NUMBER_VAL(i);
+        table_set(&table, key, val);
+        if (i % 5 == 0) {
+            table_delete(&table, key);
+        }
+    }
+
+    print_table(&table);
+    free_table(&table);
+#else
     init_VM();
 
     if (argc == 1) {
@@ -76,5 +100,6 @@ int main(int argc, const char* argv[])
         exit(64);
     }
     free_VM();
+#endif
     return 0;
 }
