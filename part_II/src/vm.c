@@ -50,10 +50,12 @@ void init_VM()
     reset_stack();
     vm.objects = NULL;
     init_table(&vm.strings);
+    init_table(&vm.globals);
 }
 
 void free_VM()
 {
+    free_table(&vm.globals);
     free_table(&vm.strings);
     free_objects();
 }
@@ -72,6 +74,7 @@ static InterpretResult run()
         double a = AS_NUMBER(pop());                                                               \
         push(value_type(a op b));                                                                  \
     } while (false)
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 
     for (;;) {
 
@@ -123,8 +126,7 @@ static InterpretResult run()
             BINARY_OP(NUMBER_VAL, /);
             break;
         case OP_RETURN: {
-            print_value(pop());
-            printf("\n");
+            // exit interpreter
             return INTERPRET_OK;
         }
         case OP_NIL:
@@ -151,6 +153,20 @@ static InterpretResult run()
         case OP_LESS:
             BINARY_OP(BOOL_VAL, <);
             break;
+        case OP_PRINT: {
+            print_value(pop());
+            printf("\n");
+            break;
+        }
+        case OP_POP:
+            pop();
+            break;
+        case OP_DEFINE_GLOBAL: {
+            ObjString* name = READ_STRING();
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
         default:
             break;
         }
@@ -159,6 +175,7 @@ static InterpretResult run()
 #undef READ_BYTE
 #undef READ_CONSTANT
 #undef BINARY_OP
+#undef READ_STRING
 }
 
 InterpretResult interpret(const char* source)
