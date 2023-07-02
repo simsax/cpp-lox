@@ -177,6 +177,18 @@ static InterpretResult run()
             push(value);
             break;
         }
+        case OP_SET_GLOBAL: {
+            ObjString* name = READ_STRING();
+            Value value;
+            if (table_set(&vm.globals, name, peek(0))) {
+                table_delete(&vm.globals, name);
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            // setting a variable doesn't pop the value off the stack because
+            // assignment is an expressione_set()
+            break;
+        }
         default:
             break;
         }
