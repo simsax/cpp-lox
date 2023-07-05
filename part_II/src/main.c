@@ -9,7 +9,7 @@
 #include <stdio.h>
 #include <assert.h>
 
-#define HASH_TEST 1
+#define HASH_TEST 0
 
 #if HASH_TEST
 #include "table.h"

@@ -14,6 +14,7 @@ typedef struct {
     size_t stack_capacity;
     Value* stack;
     Table strings;
+    Table globals;
     Obj* objects;
 } VM;
 

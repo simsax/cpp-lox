@@ -53,10 +53,12 @@ void init_VM()
     vm.stack = NULL;
     vm.objects = NULL;
     init_table(&vm.strings);
+    init_table(&vm.globals);
 }
 
 void free_VM()
 {
+    free_table(&vm.globals);
     free_table(&vm.strings);
     free_objects();
 }
@@ -83,6 +85,7 @@ static InterpretResult run()
         double b = AS_NUMBER(pop());                                                               \
         TOP_STACK_VAL = value_type(AS_NUMBER(TOP_STACK_VAL) op b);                                 \
     } while (false)
+#define READ_STRING() AS_STRING(READ_CONSTANT())
 
     for (;;) {
 
@@ -138,8 +141,7 @@ static InterpretResult run()
             BINARY_OP(NUMBER_VAL, /);
             break;
         case OP_RETURN: {
-            print_value(pop());
-            printf("\n");
+            // exit interpreter
             return INTERPRET_OK;
         }
         case OP_NIL:
@@ -176,6 +178,42 @@ static InterpretResult run()
         case OP_LESS_EQUAL:
             BINARY_OP(BOOL_VAL, <=);
             break;
+        case OP_PRINT: {
+            print_value(pop());
+            printf("\n");
+            break;
+        }
+        case OP_POP:
+            pop();
+            break;
+        case OP_DEFINE_GLOBAL: {
+            ObjString* name = READ_STRING();
+            table_set(&vm.globals, name, peek(0));
+            pop();
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            ObjString* name = READ_STRING();
+            Value value;
+            if (!table_get(&vm.globals, name, &value)) {
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            push(value);
+            break;
+        }
+        case OP_SET_GLOBAL: {
+            ObjString* name = READ_STRING();
+            Value value;
+            if (table_set(&vm.globals, name, peek(0))) {
+                table_delete(&vm.globals, name);
+                runtime_error("Undefined variable '%s'.", name->chars);
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            // setting a variable doesn't pop the value off the stack because
+            // assignment is an expressione_set()
+            break;
+        }
         default:
             break;
         }
@@ -186,6 +224,7 @@ static InterpretResult run()
 #undef PUSH_CONSTANT_LONG
 #undef BINARY_OP
 #undef TOP_STACK_VAL
+#undef READ_STRING
 }
 
 InterpretResult interpret(const char* source)

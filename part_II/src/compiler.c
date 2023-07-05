@@ -32,7 +32,7 @@ typedef enum {
     PREC_PRIMARY
 } Precedence;
 
-typedef void (*ParseFn)();
+typedef void (*ParseFn)(bool can_assign);
 
 typedef struct {
     ParseFn prefix;
@@ -44,6 +44,8 @@ static Parser parser;
 static Chunk* compiling_chunk;
 
 static void expression();
+static void statement();
+static void declaration();
 static ParseRule* get_rule(TokenType type);
 static void parse_precedence(Precedence precedence);
 
@@ -72,6 +74,17 @@ static void error_at_current(const char* message) { error_at(&parser.current, me
 
 static void error(const char* message) { error_at(&parser.previous, message); }
 
+static uint8_t make_constant(Value value)
+{
+    int constant_index = add_constant(current_chunk(), value);
+    if (constant_index > UINT8_MAX) {
+        error("Too many constants in one chunk.");
+        return 0;
+    }
+
+    return (uint8_t)constant_index;
+}
+
 static void advance()
 {
     parser.previous = parser.current;
@@ -94,6 +107,16 @@ static void consume(TokenType type, const char* message)
     error_at_current(message);
 }
 
+static bool check(TokenType type) { return parser.current.type == type; }
+
+static bool match(TokenType type)
+{
+    if (!check(type))
+        return false;
+    advance();
+    return true;
+}
+
 static void emit_byte(uint8_t byte) { write_chunk(current_chunk(), byte, parser.previous.line); }
 
 static void emit_bytes(uint8_t byte1, uint8_t byte2)
@@ -114,57 +137,7 @@ static void end_compiler()
 #endif
 }
 
-// In jlox, each method for parsing a specific expression also parsed any expressions of higher
-// precedence too, so that included the rest of the precedence table.
-
-// In clox, parsing function don't cascade to include higher precedence expression types
-
-static void parse_precedence(Precedence precedence)
-{
-    // starts at the current token and parses any expression at the given precedence level or higher
-    advance();
-    ParseFn prefix_rule = get_rule(parser.previous.type)->prefix;
-    if (prefix_rule == NULL) {
-        error("Expect expression.");
-        return;
-    }
-    prefix_rule();
-
-    while (precedence <= get_rule(parser.current.type)->precedence) {
-        advance();
-        ParseFn infix_rule = get_rule(parser.previous.type)->infix;
-        infix_rule();
-    }
-}
-
-static uint8_t make_constant(Value value)
-{
-    int constant_index = add_constant(current_chunk(), value);
-    if (constant_index > UINT8_MAX) {
-        error("Too many constants in one chunk.");
-        return 0;
-    }
-
-    return (uint8_t)constant_index;
-}
-
-static void emit_constant(Value value) { emit_bytes(OP_CONSTANT, make_constant(value)); }
-
-static void number()
-{
-    double value = strtod(parser.previous.start, NULL);
-    emit_constant(NUMBER_VAL(value));
-}
-
-static void expression() { parse_precedence(PREC_ASSIGNMENT); }
-
-static void grouping()
-{
-    expression();
-    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
-}
-
-static void binary()
+static void binary(bool can_assign)
 {
     TokenType operator_type = parser.previous.type;
     ParseRule* rule = get_rule(operator_type);
@@ -184,7 +157,7 @@ static void binary()
         emit_byte(OP_DIVIDE);
         break;
     case TOKEN_BANG_EQUAL:
-        emit_byte(OP_NOT_EQUAL);
+        emit_bytes(OP_EQUAL, OP_NOT);
         break;
     case TOKEN_EQUAL_EQUAL:
         emit_byte(OP_EQUAL);
@@ -193,13 +166,13 @@ static void binary()
         emit_byte(OP_GREATER);
         break;
     case TOKEN_GREATER_EQUAL:
-        emit_byte(OP_GREATER_EQUAL);
+        emit_bytes(OP_LESS, OP_NOT);
         break;
     case TOKEN_LESS:
         emit_byte(OP_LESS);
         break;
     case TOKEN_LESS_EQUAL:
-        emit_byte(OP_LESS_EQUAL);
+        emit_bytes(OP_GREATER, OP_NOT);
         break;
 
     default:
@@ -207,16 +180,145 @@ static void binary()
     }
 }
 
-static void ternary()
+// In jlox, each method for parsing a specific expression also parsed any expressions of higher
+// precedence too, so that included the rest of the precedence table.
+
+// In clox, parsing function don't cascade to include higher precedence expression types
+
+static void parse_precedence(Precedence precedence)
 {
-    TokenType type = parser.previous.type;
-    assert(type == TOKEN_QUESTION_MARK);
-    expression();
-    consume(TOKEN_COLON, "Expect ':' in ternary expression.");
-    parse_precedence(PREC_TERNARY);
+    // starts at the current token and parses any expression at the given precedence level or higher
+    advance();
+    ParseFn prefix_rule = get_rule(parser.previous.type)->prefix;
+    if (prefix_rule == NULL) {
+        error("Expect expression.");
+        return;
+    }
+
+    bool can_assign = precedence <= PREC_ASSIGNMENT;
+    prefix_rule(can_assign);
+
+    while (precedence <= get_rule(parser.current.type)->precedence) {
+        advance();
+        ParseFn infix_rule = get_rule(parser.previous.type)->infix;
+        infix_rule(can_assign);
+    }
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        error("Invalid assignment target.");
+    }
 }
 
-static void unary()
+// It takes the given token and adds its lexeme to the chunk's constant table as a string.
+// It returns the index of that constant in the constant table.
+static uint8_t identifier_constant(Token* name)
+{
+    Chunk* chunk = current_chunk();
+    ObjString* string = copy_string(name->start, name->length);
+    int index = find_string_in_array(&chunk->constants, string);
+    if (index != -1) {
+        return (uint8_t)index;
+    }
+    return make_constant(OBJ_VAL(string));
+}
+
+static uint8_t parse_variable(const char* error_message)
+{
+    consume(TOKEN_IDENTIFIER, error_message);
+    return identifier_constant(&parser.previous);
+}
+
+static void expression() { parse_precedence(PREC_ASSIGNMENT); }
+
+static void print_statement()
+{
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after value.");
+    emit_byte(OP_PRINT);
+}
+
+static void expression_statement()
+{
+    expression();
+    consume(TOKEN_SEMICOLON, "Expect ';' after expression.");
+    emit_byte(OP_POP);
+}
+
+static void synchronize()
+{
+    parser.panic_mode = false;
+
+    while (parser.current.type != TOKEN_EOF) {
+        if (parser.previous.type == TOKEN_SEMICOLON)
+            return;
+        switch (parser.current.type) {
+        case TOKEN_CLASS:
+        case TOKEN_FUN:
+        case TOKEN_VAR:
+        case TOKEN_FOR:
+        case TOKEN_IF:
+        case TOKEN_WHILE:
+        case TOKEN_PRINT:
+        case TOKEN_RETURN:
+            return;
+
+        default:; // Do nothing.
+        }
+        advance();
+    }
+}
+
+static void define_variable(uint8_t global) { emit_bytes(OP_DEFINE_GLOBAL, global); }
+
+static void var_declaration()
+{
+    uint8_t global = parse_variable("Expect variable name.");
+
+    if (match(TOKEN_EQUAL)) {
+        expression();
+    } else {
+        emit_byte(OP_NIL);
+    }
+
+    consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
+    define_variable(global);
+}
+
+static void declaration()
+{
+    if (match(TOKEN_VAR)) {
+        var_declaration();
+    } else {
+        statement();
+    }
+    if (parser.panic_mode)
+        synchronize;
+}
+
+static void statement()
+{
+    if (match(TOKEN_PRINT)) {
+        print_statement();
+    } else {
+        expression_statement();
+    }
+}
+
+static void grouping(bool can_assign)
+{
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after expression.");
+}
+
+static void emit_constant(Value value) { emit_bytes(OP_CONSTANT, make_constant(value)); }
+
+static void number(bool can_assign)
+{
+    double value = strtod(parser.previous.start, NULL);
+    emit_constant(NUMBER_VAL(value));
+}
+
+static void unary(bool can_assign)
 {
     TokenType operator_type = parser.previous.type;
 
@@ -236,7 +338,7 @@ static void unary()
     }
 }
 
-static void literal()
+static void literal(bool can_assign)
 {
     switch (parser.previous.type) {
     case TOKEN_FALSE:
@@ -253,10 +355,33 @@ static void literal()
     }
 }
 
-static void string()
+static void string(bool can_assign)
 {
     // +1 and -2 trim the leading and trailing quotation marks
     emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
+}
+
+static void named_variable(Token name, bool can_assign)
+{
+    uint8_t arg = identifier_constant(&name);
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        emit_bytes(OP_SET_GLOBAL, arg);
+    } else {
+        emit_bytes(OP_GET_GLOBAL, arg);
+    }
+}
+
+static void variable(bool can_assign) { named_variable(parser.previous, can_assign); }
+
+static void ternary(bool can_assign)
+{
+    TokenType type = parser.previous.type;
+    assert(type == TOKEN_QUESTION_MARK);
+    expression();
+    consume(TOKEN_COLON, "Expect ':' in ternary expression.");
+    parse_precedence(PREC_TERNARY);
 }
 
 bool compile(const char* source, Chunk* chunk)
@@ -266,8 +391,9 @@ bool compile(const char* source, Chunk* chunk)
     parser.had_error = false;
     parser.panic_mode = false;
     advance();
-    expression();
-    consume(TOKEN_EOF, "Expect end of expression.");
+    while (!match(TOKEN_EOF)) {
+        declaration();
+    }
     end_compiler();
     return !parser.had_error;
 }
@@ -292,7 +418,7 @@ static ParseRule rules[] = {
     [TOKEN_GREATER_EQUAL] = { NULL, binary, PREC_COMPARISON },
     [TOKEN_LESS] = { NULL, binary, PREC_COMPARISON },
     [TOKEN_LESS_EQUAL] = { NULL, binary, PREC_COMPARISON },
-    [TOKEN_IDENTIFIER] = { NULL, NULL, PREC_NONE },
+    [TOKEN_IDENTIFIER] = { variable, NULL, PREC_NONE },
     [TOKEN_STRING] = { string, NULL, PREC_NONE },
     [TOKEN_NUMBER] = { number, NULL, PREC_NONE },
     [TOKEN_AND] = { NULL, NULL, PREC_NONE },

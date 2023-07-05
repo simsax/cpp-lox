@@ -63,3 +63,16 @@ bool values_equal(Value a, Value b)
         return false;
     }
 }
+
+int find_string_in_array(ValueArray* array, ObjString* string)
+{
+    for (int i = 0; i < array->count; i++) {
+        Value value = array->values[i];
+        if (IS_OBJ(value) && IS_STRING(value)) {
+            ObjString* value_string = AS_STRING(value);
+            if (value_string == string)
+                return i;
+        }
+    }
+    return -1;
+}
