@@ -186,7 +186,17 @@ static InterpretResult run()
                 return INTERPRET_RUNTIME_ERROR;
             }
             // setting a variable doesn't pop the value off the stack because
-            // assignment is an expressione_set()
+            // assignment is an expression
+            break;
+        }
+        case OP_GET_LOCAL: {
+            uint8_t slot = READ_BYTE();
+            push(vm.stack[slot]);
+            break;
+        }
+        case OP_SET_LOCAL: {
+            uint8_t slot = READ_BYTE();
+            vm.stack[slot] = peek(0);
             break;
         }
         default:
