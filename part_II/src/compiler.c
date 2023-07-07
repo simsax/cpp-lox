@@ -395,7 +395,7 @@ static void declaration()
         statement();
     }
     if (parser.panic_mode)
-        synchronize;
+        synchronize();
 }
 
 static void statement()
