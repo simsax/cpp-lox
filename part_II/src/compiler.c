@@ -48,7 +48,9 @@ typedef struct {
 
 typedef struct {
     Local locals[UINT8_COUNT];
+    Local constants[UINT8_COUNT];
     int local_count;
+    int const_count;
     int scope_depth;
 } Compiler;
 
@@ -161,6 +163,11 @@ static void end_scope()
         emit_byte(OP_POP);
         current->local_count--;
     }
+
+    while (current->const_count > 0
+        && current->constants[current->const_count - 1].depth > current->scope_depth) {
+        current->const_count--;
+    }
 }
 
 static void binary(bool can_assign)
@@ -272,6 +279,20 @@ static int resolve_local(Compiler* compiler, Token* name)
     return -1;
 }
 
+static bool resolve_const(Compiler* compiler, Token* name)
+{
+    for (int i = compiler->const_count - 1; i >= 0; i--) {
+        Local* local = &compiler->constants[i];
+        if (identifiers_equal(&local->name, name)) {
+            if (local->depth == -1) {
+                error("Can't read constant in its own initializer.");
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 static void add_local(Token name)
 {
     if (current->local_count == UINT8_COUNT) {
@@ -304,11 +325,27 @@ static void declare_variable()
     add_local(*name);
 }
 
-static uint8_t parse_variable(const char* error_message)
+static void declare_const(Token name)
+{
+    if (current->local_count == UINT8_COUNT) {
+        error("Too many constants in function.");
+        return;
+    }
+    Local* local = &current->constants[current->const_count++];
+    local->name = name;
+    if (current->scope_depth > 0)
+        local->depth = -1;
+    else
+        local->depth = current->scope_depth;
+}
+
+static uint8_t parse_variable(const char* error_message, bool is_const)
 {
     consume(TOKEN_IDENTIFIER, error_message);
 
     declare_variable();
+    if (is_const)
+        declare_const(parser.previous);
     if (current->scope_depth > 0) {
         // we are in a local scope, return dummy table index
         // (locals aren't looked up by name)
@@ -318,9 +355,12 @@ static uint8_t parse_variable(const char* error_message)
     return identifier_constant(&parser.previous);
 }
 
-static void mark_initialized()
+static void mark_initialized(bool is_const)
 {
     current->locals[current->local_count - 1].depth = current->scope_depth;
+
+    if (is_const)
+        current->constants[current->const_count - 1].depth = current->scope_depth;
 }
 
 static void expression() { parse_precedence(PREC_ASSIGNMENT); }
@@ -372,18 +412,18 @@ static void synchronize()
     }
 }
 
-static void define_variable(uint8_t global)
+static void define_variable(uint8_t global, bool is_const)
 {
     if (current->scope_depth > 0) {
-        mark_initialized();
+        mark_initialized(is_const);
         return;
     }
     emit_bytes(OP_DEFINE_GLOBAL, global);
 }
 
-static void var_declaration()
+static void var_declaration(bool is_const)
 {
-    uint8_t global = parse_variable("Expect variable name.");
+    uint8_t global = parse_variable("Expect variable name.", is_const);
 
     if (match(TOKEN_EQUAL)) {
         expression();
@@ -392,13 +432,15 @@ static void var_declaration()
     }
 
     consume(TOKEN_SEMICOLON, "Expect ';' after variable declaration.");
-    define_variable(global);
+    define_variable(global, is_const);
 }
 
 static void declaration()
 {
     if (match(TOKEN_VAR)) {
-        var_declaration();
+        var_declaration(false);
+    } else if (match(TOKEN_CONST)) {
+        var_declaration(true);
     } else {
         statement();
     }
@@ -431,6 +473,7 @@ static void init_compiler(Compiler* compiler)
 {
     compiler->local_count = 0;
     compiler->scope_depth = 0;
+    compiler->const_count = 0;
     current = compiler;
 }
 
@@ -497,6 +540,10 @@ static void named_variable(Token name, bool can_assign)
     }
 
     if (can_assign && match(TOKEN_EQUAL)) {
+        if (resolve_const(current, &name)) {
+            error("Can't reassign const variable.");
+            return;
+        }
         expression();
         emit_bytes(set_op, (uint8_t)arg);
     } else {

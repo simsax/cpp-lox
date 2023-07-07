@@ -262,7 +262,6 @@ void push(Value value)
     // cannot use a pointer to top of stack because the stack might be copied to another
     // location on the heap in case realloc can't find enough contiguous space, so using an index
     // is required
-    // TODO: fix this
     if (vm.stack_capacity <= vm.stack_top) {
         size_t old_capacity = vm.stack_capacity;
         vm.stack_capacity = GROW_CAPACITY(old_capacity);
