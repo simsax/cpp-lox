@@ -211,6 +211,11 @@ static InterpretResult run()
             vm.ip += offset;
             break;
         }
+        case OP_LOOP: {
+            uint16_t offset = READ_SHORT();
+            vm.ip -= offset;
+            break;
+        }
         default:
             break;
         }
