@@ -504,11 +504,6 @@ static void for_statement()
         emit_byte(OP_POP); // condition
     }
 
-    if (exit_jump != -1) {
-        patch_jump(exit_jump);
-        emit_byte(OP_POP); // condition
-    }
-
     if (!match(TOKEN_RIGHT_PAREN)) {
         int body_jump = emit_jump(OP_JUMP);
         int increment_start = current_chunk()->count;
@@ -523,6 +518,12 @@ static void for_statement()
 
     statement();
     emit_loop(loop_start);
+
+    if (exit_jump != -1) {
+        patch_jump(exit_jump);
+        emit_byte(OP_POP); // condition
+    }
+
     end_scope();
 }
 
