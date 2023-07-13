@@ -52,6 +52,8 @@ typedef struct {
     int local_count;
     int const_count;
     int scope_depth;
+    bool inside_loop;
+    int break_jump;
 } Compiler;
 
 static Parser parser;
@@ -187,20 +189,24 @@ static void end_compiler()
 
 static void begin_scope() { current->scope_depth++; }
 
-static void end_scope()
+static void clean_scope(int scope_depth)
 {
-    current->scope_depth--;
-
-    while (current->local_count > 0
-        && current->locals[current->local_count - 1].depth > current->scope_depth) {
+    while (
+        current->local_count > 0 && current->locals[current->local_count - 1].depth > scope_depth) {
         emit_byte(OP_POP);
         current->local_count--;
     }
 
     while (current->const_count > 0
-        && current->constants[current->const_count - 1].depth > current->scope_depth) {
+        && current->constants[current->const_count - 1].depth > scope_depth) {
         current->const_count--;
     }
+}
+
+static void end_scope()
+{
+    current->scope_depth--;
+    clean_scope(current->scope_depth);
 }
 
 static void binary(bool can_assign)
@@ -421,6 +427,15 @@ static void expression_statement()
     emit_byte(OP_POP);
 }
 
+static void patch_break(int scope_depth)
+{
+    if (current->break_jump != -1) {
+        patch_jump(current->break_jump);
+        current->break_jump = -1;
+    }
+    clean_scope(scope_depth);
+}
+
 static void if_statement()
 {
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'if'.");
@@ -443,6 +458,7 @@ static void if_statement()
 
 static void while_statement()
 {
+    int prev_scope_depth = current->scope_depth;
     int loop_start = current_chunk()->count;
     consume(TOKEN_LEFT_PAREN, "Expect '(' after 'while'.");
     expression();
@@ -454,7 +470,8 @@ static void while_statement()
     emit_loop(loop_start);
 
     patch_jump(exit_jump);
-    emit_byte(OP_POP);
+    emit_byte(OP_POP); // condition
+    patch_break(prev_scope_depth);
 }
 
 static void synchronize()
@@ -564,6 +581,8 @@ static void for_statement()
         patch_jump(body_jump);
     }
 
+    int prev_scope_depth = current->scope_depth;
+
     statement();
     emit_loop(loop_start);
 
@@ -572,7 +591,27 @@ static void for_statement()
         emit_byte(OP_POP); // condition
     }
 
+    patch_break(prev_scope_depth);
+
     end_scope();
+}
+
+static void break_statement()
+{
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'break'.");
+    if (!current->inside_loop) {
+        error("Can't have 'break' statement outside of a loop.");
+    }
+    current->break_jump = emit_jump(OP_JUMP);
+}
+
+static void continue_statement()
+{
+    consume(TOKEN_SEMICOLON, "Expect ';' after 'continue'.");
+    if (!current->inside_loop) {
+        error("Can't have 'continue' statement outside of a loop.");
+    }
+    // TODO
 }
 
 static void declaration()
@@ -595,13 +634,23 @@ static void statement()
     } else if (match(TOKEN_IF)) {
         if_statement();
     } else if (match(TOKEN_WHILE)) {
+        bool prev_inside_loop = current->inside_loop;
+        current->inside_loop = true;
         while_statement();
+        current->inside_loop = prev_inside_loop;
     } else if (match(TOKEN_FOR)) {
+        bool prev_inside_loop = current->inside_loop;
+        current->inside_loop = true;
         for_statement();
+        current->inside_loop = prev_inside_loop;
     } else if (match(TOKEN_LEFT_BRACE)) {
         begin_scope();
         block();
         end_scope();
+    } else if (match(TOKEN_BREAK)) {
+        break_statement();
+    } else if (match(TOKEN_CONTINUE)) {
+        continue_statement();
     } else {
         expression_statement();
     }
@@ -618,6 +667,8 @@ static void init_compiler(Compiler* compiler)
     compiler->local_count = 0;
     compiler->scope_depth = 0;
     compiler->const_count = 0;
+    compiler->inside_loop = false;
+    compiler->break_jump = -1;
     current = compiler;
 }
 
@@ -761,6 +812,9 @@ static ParseRule rules[] = {
     [TOKEN_TRUE] = { literal, NULL, PREC_NONE },
     [TOKEN_VAR] = { NULL, NULL, PREC_NONE },
     [TOKEN_WHILE] = { NULL, NULL, PREC_NONE },
+    [TOKEN_CONST] = { NULL, NULL, PREC_NONE },
+    [TOKEN_BREAK] = { NULL, NULL, PREC_NONE },
+    [TOKEN_CONTINUE] = { NULL, NULL, PREC_NONE },
     [TOKEN_ERROR] = { NULL, NULL, PREC_NONE },
     [TOKEN_QUESTION_MARK] = { NULL, ternary, PREC_TERNARY },
     [TOKEN_COLON] = { NULL, NULL, PREC_NONE },

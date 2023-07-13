@@ -126,13 +126,27 @@ static TokenType identifer_type()
     switch (scanner.start[0]) {
     case 'a':
         return check_keyword(1, 2, "nd", TOKEN_AND);
+    case 'b':
+        return check_keyword(1, 4, "reak", TOKEN_BREAK);
     case 'c':
         if (scanner.current - scanner.start > 1) {
             switch (scanner.start[1]) {
             case 'l':
                 return check_keyword(2, 3, "ass", TOKEN_CLASS);
             case 'o':
-                return check_keyword(2, 3, "nst", TOKEN_CONST);
+                if (scanner.current - scanner.start > 2) {
+                    switch (scanner.start[2]) {
+                    case 'n':
+                        if (scanner.current - scanner.start > 3) {
+                            switch (scanner.start[3]) {
+                            case 's':
+                                return check_keyword(4, 1, "t", TOKEN_CONST);
+                            case 't':
+                                return check_keyword(4, 4, "inue", TOKEN_CONTINUE);
+                            }
+                        }
+                    }
+                }
             }
         }
     case 'e':
