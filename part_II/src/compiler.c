@@ -665,7 +665,8 @@ static void switch_statement()
         emit_byte(OP_POP); // switch condition
 
         // execute case statements
-        while (!(check(TOKEN_CASE) || check(TOKEN_DEFAULT) || check(TOKEN_RIGHT_BRACE))) {
+        while (!(check(TOKEN_CASE) || check(TOKEN_DEFAULT) || check(TOKEN_RIGHT_BRACE)
+            || check(TOKEN_EOF))) {
             statement();
         }
 
@@ -678,7 +679,7 @@ static void switch_statement()
     if (match(TOKEN_DEFAULT)) {
         emit_byte(OP_POP); // switch condition
         consume(TOKEN_COLON, "Expect ':' after 'default'.");
-        while (!check(TOKEN_RIGHT_BRACE)) {
+        while (!(check(TOKEN_RIGHT_BRACE) || check(TOKEN_EOF))) {
             statement();
         }
     }
