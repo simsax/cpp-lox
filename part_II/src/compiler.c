@@ -54,6 +54,7 @@ typedef struct {
     int scope_depth;
     bool inside_loop;
     int break_jump;
+    int continue_jump;
 } Compiler;
 
 static Parser parser;
@@ -432,8 +433,17 @@ static void patch_break(int scope_depth)
     if (current->break_jump != -1) {
         patch_jump(current->break_jump);
         current->break_jump = -1;
+        clean_scope(scope_depth);
     }
-    clean_scope(scope_depth);
+}
+
+static void patch_continue(int scope_depth)
+{
+    if (current->continue_jump != -1) {
+        patch_jump(current->continue_jump);
+        current->continue_jump = -1;
+        clean_scope(scope_depth);
+    }
 }
 
 static void if_statement()
@@ -467,6 +477,7 @@ static void while_statement()
     int exit_jump = emit_jump(OP_JUMP_IF_FALSE);
     emit_byte(OP_POP);
     statement();
+    patch_continue(prev_scope_depth);
     emit_loop(loop_start);
 
     patch_jump(exit_jump);
@@ -559,6 +570,7 @@ static void for_statement()
 
     int loop_start = current_chunk()->count;
     int exit_jump = -1;
+    int prev_scope_depth = current->scope_depth;
 
     if (!match(TOKEN_SEMICOLON)) {
         expression();
@@ -581,9 +593,8 @@ static void for_statement()
         patch_jump(body_jump);
     }
 
-    int prev_scope_depth = current->scope_depth;
-
     statement();
+    patch_continue(prev_scope_depth);
     emit_loop(loop_start);
 
     if (exit_jump != -1) {
@@ -611,7 +622,7 @@ static void continue_statement()
     if (!current->inside_loop) {
         error("Can't have 'continue' statement outside of a loop.");
     }
-    // TODO
+    current->continue_jump = emit_jump(OP_JUMP);
 }
 
 static void declaration()
@@ -669,6 +680,7 @@ static void init_compiler(Compiler* compiler)
     compiler->const_count = 0;
     compiler->inside_loop = false;
     compiler->break_jump = -1;
+    compiler->continue_jump = -1;
     current = compiler;
 }
 
