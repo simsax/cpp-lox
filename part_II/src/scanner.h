@@ -47,6 +47,9 @@ typedef enum {
     TOKEN_CONST,
     TOKEN_BREAK,
     TOKEN_CONTINUE,
+    TOKEN_SWITCH,
+    TOKEN_CASE,
+    TOKEN_DEFAULT,
 
     // ternary
     TOKEN_QUESTION_MARK,

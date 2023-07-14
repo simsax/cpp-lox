@@ -241,6 +241,12 @@ static InterpretResult run()
             vm.ip -= offset;
             break;
         }
+        case OP_JUMP_IF_NOT_EQUAL: {
+            uint16_t offset = READ_SHORT();
+            if (!values_equal(peek(0), peek(1)))
+                vm.ip += offset;
+            break;
+        }
         default:
             break;
         }

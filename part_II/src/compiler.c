@@ -7,6 +7,7 @@
 #include "scanner.h"
 #include "assert.h"
 #include "chunk.h"
+#include "memory.h"
 #ifdef DEBUG_PRINT_CODE
 #include "debug.h"
 #endif
@@ -47,6 +48,12 @@ typedef struct {
 } Local;
 
 typedef struct {
+    int capacity;
+    int count;
+    int* values;
+} SwitchJump;
+
+typedef struct {
     Local locals[UINT8_COUNT];
     Local constants[UINT8_COUNT];
     int local_count;
@@ -55,6 +62,7 @@ typedef struct {
     bool inside_loop;
     int break_jump;
     int continue_jump;
+    SwitchJump switch_jumps;
 } Compiler;
 
 static Parser parser;
@@ -167,6 +175,32 @@ static void emit_return() { emit_byte(OP_RETURN); }
 
 static void emit_constant(Value value) { emit_bytes(OP_CONSTANT, make_constant(value)); }
 
+static void init_switch_jumps(SwitchJump* array)
+{
+    array->count = 0;
+    array->capacity = 0;
+    array->values = NULL;
+}
+
+static void write_switch_jumps(SwitchJump* array, int value)
+{
+    if (array->capacity < array->count + 1) {
+        int old_capacity = array->capacity;
+        array->capacity = GROW_CAPACITY(old_capacity);
+        array->values = GROW_ARRAY(int, array->values, old_capacity, array->capacity);
+    }
+    array->values[array->count] = value;
+    array->count++;
+}
+
+static void free_switch_jumps(SwitchJump* array)
+{
+    FREE_ARRAY(int, array->values, array->capacity);
+    init_switch_jumps(array);
+}
+
+void reset_switch_jumps(SwitchJump* array) { array->count = 0; }
+
 static void patch_jump(int offset)
 {
     // -2 to adjust for the bytecode for the jump offset itself
@@ -176,16 +210,6 @@ static void patch_jump(int offset)
     }
     current_chunk()->code[offset] = (jump >> 8) & 0xFF;
     current_chunk()->code[offset + 1] = jump & 0xFF;
-}
-
-static void end_compiler()
-{
-    emit_return();
-#ifdef DEBUG_PRINT_CODE
-    if (!parser.had_error) {
-        disassemble_chunk(current_chunk(), "code");
-    }
-#endif
 }
 
 static void begin_scope() { current->scope_depth++; }
@@ -625,6 +649,48 @@ static void continue_statement()
     current->continue_jump = emit_jump(OP_JUMP);
 }
 
+static void switch_statement()
+{
+    consume(TOKEN_LEFT_PAREN, "Expect '(' after 'switch'.");
+    expression();
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after condition.");
+    consume(TOKEN_LEFT_BRACE, "Expect '{' before switch body.");
+
+    while (match(TOKEN_CASE)) {
+        expression();
+        consume(TOKEN_COLON, "Expect ':' after case condition.");
+
+        int next_case = emit_jump(OP_JUMP_IF_NOT_EQUAL);
+        emit_byte(OP_POP);
+        emit_byte(OP_POP); // switch condition
+
+        // execute case statements
+        while (!(check(TOKEN_CASE) || check(TOKEN_DEFAULT) || check(TOKEN_RIGHT_BRACE))) {
+            statement();
+        }
+
+        write_switch_jumps(&current->switch_jumps, emit_jump(OP_JUMP));
+
+        patch_jump(next_case);
+        emit_byte(OP_POP);
+    }
+
+    if (match(TOKEN_DEFAULT)) {
+        emit_byte(OP_POP); // switch condition
+        consume(TOKEN_COLON, "Expect ':' after 'default'.");
+        while (!check(TOKEN_RIGHT_BRACE)) {
+            statement();
+        }
+    }
+
+    for (int i = 0; i < current->switch_jumps.count; i++) {
+        patch_jump(current->switch_jumps.values[i]);
+    }
+    reset_switch_jumps(&current->switch_jumps);
+
+    consume(TOKEN_RIGHT_BRACE, "Expect '}' after switch body.");
+}
+
 static void declaration()
 {
     if (match(TOKEN_VAR)) {
@@ -662,6 +728,8 @@ static void statement()
         break_statement();
     } else if (match(TOKEN_CONTINUE)) {
         continue_statement();
+    } else if (match(TOKEN_SWITCH)) {
+        switch_statement();
     } else {
         expression_statement();
     }
@@ -681,6 +749,7 @@ static void init_compiler(Compiler* compiler)
     compiler->inside_loop = false;
     compiler->break_jump = -1;
     compiler->continue_jump = -1;
+    init_switch_jumps(&compiler->switch_jumps);
     current = compiler;
 }
 
@@ -769,6 +838,17 @@ static void ternary(bool can_assign)
     parse_precedence(PREC_TERNARY);
 }
 
+static void end_compiler()
+{
+    emit_return();
+    free_switch_jumps(&current->switch_jumps);
+#ifdef DEBUG_PRINT_CODE
+    if (!parser.had_error) {
+        disassemble_chunk(current_chunk(), "code");
+    }
+#endif
+}
+
 bool compile(const char* source, Chunk* chunk)
 {
     init_scanner(source);
@@ -827,6 +907,9 @@ static ParseRule rules[] = {
     [TOKEN_CONST] = { NULL, NULL, PREC_NONE },
     [TOKEN_BREAK] = { NULL, NULL, PREC_NONE },
     [TOKEN_CONTINUE] = { NULL, NULL, PREC_NONE },
+    [TOKEN_SWITCH] = { NULL, NULL, PREC_NONE },
+    [TOKEN_CASE] = { NULL, NULL, PREC_NONE },
+    [TOKEN_DEFAULT] = { NULL, NULL, PREC_NONE },
     [TOKEN_ERROR] = { NULL, NULL, PREC_NONE },
     [TOKEN_QUESTION_MARK] = { NULL, ternary, PREC_TERNARY },
     [TOKEN_COLON] = { NULL, NULL, PREC_NONE },
