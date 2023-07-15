@@ -27,6 +27,6 @@ primary        → NUMBER | STRING | "true" | "false" | "nil" | "this"
 
 #include "chunk.h"
 
-bool compile(const char* source, Chunk* chunk);
+ObjFunction* compile(const char* source);
 
 #endif

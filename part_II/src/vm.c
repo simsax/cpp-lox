@@ -10,7 +10,11 @@
 
 VM vm;
 
-static void reset_stack() { vm.stack_top = vm.stack; }
+static void reset_stack()
+{
+    vm.stack_top = vm.stack;
+    vm.frame_count = 0;
+}
 
 static void runtime_error(const char* format, ...)
 {
@@ -20,8 +24,9 @@ static void runtime_error(const char* format, ...)
     va_end(args);
     fputs("\n", stderr);
 
-    size_t instruction_index = vm.ip - vm.chunk->code - 1;
-    int line = vm.chunk->lines[instruction_index];
+    CallFrame* frame = &vm.frames[vm.frame_count - 1];
+    size_t instruction_index = frame->ip - frame->function->chunk.code - 1;
+    int line = frame->function->chunk.lines[instruction_index];
     fprintf(stderr, "[line %d] in script\n", line);
     reset_stack();
 }
@@ -62,9 +67,10 @@ void free_VM()
 
 static InterpretResult run()
 {
-#define READ_BYTE() (*vm.ip++)
+    CallFrame* frame = &vm.frames[vm.frame_count - 1];
+#define READ_BYTE() (*frame->ip++)
 #define READ_SHORT() (uint16_t)((READ_BYTE() << 8) | READ_BYTE())
-#define READ_CONSTANT() (vm.chunk->constants.values[READ_BYTE()])
+#define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define BINARY_OP(value_type, op)                                                                  \
     do {                                                                                           \
         if (!IS_NUMBER(peek(0)) || !IS_NUMBER(peek(1))) {                                          \
@@ -87,7 +93,8 @@ static InterpretResult run()
             printf(" ]");
         }
         printf("\n");
-        disassemble_instruction(vm.chunk, (int)(vm.ip - vm.chunk->code));
+        disassemble_instruction(
+            &frame->function->chunk, (int)(frame->ip - frame->function->chunk.code));
 
 #endif
         uint8_t instruction = READ_BYTE();
@@ -192,7 +199,7 @@ static InterpretResult run()
         }
         case OP_GET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            push(vm.stack[slot]);
+            push(frame->slots[slot]);
             break;
         }
         case OP_SET_LOCAL: {
@@ -203,17 +210,17 @@ static InterpretResult run()
         case OP_JUMP_IF_FALSE: {
             uint16_t offset = READ_SHORT();
             if (is_falsey(peek(0)))
-                vm.ip += offset;
+                frame->ip += offset;
             break;
         }
         case OP_JUMP: {
             uint16_t offset = READ_SHORT();
-            vm.ip += offset;
+            frame->ip += offset;
             break;
         }
         case OP_LOOP: {
             uint16_t offset = READ_SHORT();
-            vm.ip -= offset;
+            frame->ip -= offset;
             break;
         }
         default:
@@ -230,21 +237,17 @@ static InterpretResult run()
 
 InterpretResult interpret(const char* source)
 {
-    Chunk chunk;
-    init_chunk(&chunk);
-
-    if (!compile(source, &chunk)) {
-        free_chunk(&chunk); // to remove in 'challenges'
+    ObjFunction* function = compile(source);
+    if (function == NULL)
         return INTERPRET_COMPILE_ERROR;
-    }
 
-    vm.chunk = &chunk;
-    vm.ip = vm.chunk->code;
+    push(OBJ_VAL(function));
+    CallFrame* frame = &vm.frames[vm.frame_count++];
+    frame->function = function;
+    frame->ip = function->chunk.code;
+    frame->slots = vm.stack;
 
-    InterpretResult result = run();
-
-    free_chunk(&chunk); // to remove in 'challenges'
-    return result;
+    return run();
 }
 
 void push(Value value)
