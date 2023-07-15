@@ -185,7 +185,11 @@ static int emit_jump(uint8_t instruction)
     return current_chunk()->count - 2;
 }
 
-static void emit_return() { emit_byte(OP_RETURN); }
+static void emit_return()
+{
+    emit_byte(OP_NIL);
+    emit_byte(OP_RETURN);
+}
 
 static void emit_constant(Value value) { emit_bytes(OP_CONSTANT, make_constant(value)); }
 
@@ -268,6 +272,28 @@ static void binary(bool can_assign)
     default:
         return;
     }
+}
+
+static uint8_t argument_list()
+{
+    uint8_t arg_count = 0;
+    if (!check(TOKEN_RIGHT_PAREN)) {
+        do {
+            expression();
+            if (arg_count == 255) {
+                error("Can't have more than 255 arguments.");
+            }
+            arg_count++;
+        } while (match(TOKEN_COMMA));
+    }
+    consume(TOKEN_RIGHT_PAREN, "Expect ')' after arguments.");
+    return arg_count;
+}
+
+static void call(bool can_assign)
+{
+    uint8_t arg_count = argument_list();
+    emit_bytes(OP_CALL, arg_count);
 }
 
 // In jlox, each method for parsing a specific expression also parsed any expressions of higher
@@ -608,6 +634,20 @@ static void declaration()
         synchronize();
 }
 
+static void return_statement()
+{
+    if (current->type == TYPE_SCRIPT) {
+        error("Can't return from top-level code.");
+    }
+    if (match(TOKEN_SEMICOLON)) {
+        emit_return();
+    } else {
+        expression();
+        consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
+        emit_byte(OP_RETURN);
+    }
+}
+
 static void statement()
 {
     if (match(TOKEN_PRINT)) {
@@ -618,6 +658,8 @@ static void statement()
         while_statement();
     } else if (match(TOKEN_FOR)) {
         for_statement();
+    } else if (match(TOKEN_RETURN)) {
+        return_statement();
     } else if (match(TOKEN_LEFT_BRACE)) {
         begin_scope();
         block();
@@ -721,7 +763,7 @@ ObjFunction* compile(const char* source)
 }
 
 static ParseRule rules[] = {
-    [TOKEN_LEFT_PAREN] = { grouping, NULL, PREC_NONE },
+    [TOKEN_LEFT_PAREN] = { grouping, call, PREC_CALL },
     [TOKEN_RIGHT_PAREN] = { NULL, NULL, PREC_NONE },
     [TOKEN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
     [TOKEN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
