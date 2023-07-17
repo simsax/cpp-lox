@@ -125,6 +125,8 @@ int disassemble_instruction(Chunk* chunk, int offset)
         return jump_instruction("OP_LOOP", -1, chunk, offset);
     case OP_JUMP_IF_NOT_EQUAL:
         return jump_instruction("OP_JUMP_IF_NOT_EQUAL", 1, chunk, offset);
+    case OP_CALL:
+        return byte_instruction("OP_CALL", chunk, offset);
     default:
         printf("Unknown opcode: %d\n", instruction);
         return offset + 1;

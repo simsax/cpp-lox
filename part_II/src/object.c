@@ -58,11 +58,26 @@ ObjString* take_string(char* chars, int length)
     return string;
 }
 
+static void print_function(ObjFunction* function)
+{
+    if (function->name == NULL) {
+        printf("<script>");
+        return;
+    }
+    printf("<fn %s>", function->name->chars);
+}
+
 void print_object(Value value)
 {
     switch (OBJ_TYPE(value)) {
     case OBJ_STRING:
         printf("%s", AS_CSTRING(value));
+        break;
+    case OBJ_FUNCTION:
+        print_function(AS_FUNCTION(value));
+        break;
+    case OBJ_NATIVE:
+        printf("<native fn>");
         break;
     default:
         break;
@@ -70,3 +85,19 @@ void print_object(Value value)
 }
 
 ObjString* make_string(const char* chars) { return copy_string(chars, strlen(chars)); }
+
+ObjFunction* new_function()
+{
+    ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
+    function->arity = 0;
+    function->name = NULL;
+    init_chunk(&function->chunk);
+    return function;
+}
+
+ObjNative* new_native(NativeFn function)
+{
+    ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
+    native->function = function;
+    return native;
+}
