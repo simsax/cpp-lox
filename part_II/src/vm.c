@@ -296,12 +296,12 @@ static InterpretResult run()
         }
         case OP_GET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            push(vm.stack[frame->first_slot]);
+            push(vm.stack[frame->first_slot + slot]);
             break;
         }
         case OP_SET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            vm.stack[frame->first_slot] = peek(0);
+            vm.stack[frame->first_slot + slot] = peek(0);
             break;
         }
         case OP_JUMP_IF_FALSE: {

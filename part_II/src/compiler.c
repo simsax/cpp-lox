@@ -149,6 +149,13 @@ static bool match(TokenType type)
     return true;
 }
 
+static void init_switch_jumps(SwitchJump* array)
+{
+    array->count = 0;
+    array->capacity = 0;
+    array->values = NULL;
+}
+
 static void init_compiler(Compiler* compiler, FunctionType type)
 {
     compiler->enclosing = current;
@@ -156,6 +163,11 @@ static void init_compiler(Compiler* compiler, FunctionType type)
     compiler->type = type;
     compiler->local_count = 0;
     compiler->scope_depth = 0;
+    compiler->const_count = 0;
+    compiler->inside_loop = false;
+    compiler->break_jump = -1;
+    compiler->continue_jump = -1;
+    init_switch_jumps(&compiler->switch_jumps);
     compiler->function = new_function();
     current = compiler;
 
@@ -209,13 +221,6 @@ static void emit_return()
 }
 
 static void emit_constant(Value value) { emit_bytes(OP_CONSTANT, make_constant(value)); }
-
-static void init_switch_jumps(SwitchJump* array)
-{
-    array->count = 0;
-    array->capacity = 0;
-    array->values = NULL;
-}
 
 static void write_switch_jumps(SwitchJump* array, int value)
 {
