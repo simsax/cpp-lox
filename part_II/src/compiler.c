@@ -46,14 +46,16 @@ typedef struct {
 
 typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
 
-typedef struct {
+struct Compiler {
     struct Compiler* enclosing;
     ObjFunction* function;
     FunctionType type;
     Local locals[UINT8_COUNT];
     int local_count;
     int scope_depth;
-} Compiler;
+};
+
+typedef struct Compiler Compiler;
 
 static Parser parser;
 static Compiler* current = NULL;

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdarg.h>
 #include <string.h>
+#include <time.h>
 #include "vm.h"
 #include "memory.h"
 #include "common.h"
@@ -9,6 +10,11 @@
 #include "object.h"
 
 VM vm;
+
+static Value clock_native(int arg_count, Value* args)
+{
+    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+}
 
 static void reset_stack()
 {
@@ -39,6 +45,15 @@ static void runtime_error(const char* format, ...)
     reset_stack();
 }
 
+static void define_native(const char* name, NativeFn function)
+{
+    push(OBJ_VAL(copy_string(name, (int)strlen(name))));
+    push(OBJ_VAL(new_native(function)));
+    table_set(&vm.globals, AS_STRING(vm.stack[0]), vm.stack[1]);
+    pop();
+    pop();
+}
+
 // returns a value from the stack but doesn't pop it
 static Value peek(int distance) { return vm.stack_top[-1 - distance]; }
 
@@ -64,6 +79,8 @@ void init_VM()
     vm.objects = NULL;
     init_table(&vm.strings);
     init_table(&vm.globals);
+
+    define_native("clock", clock_native);
 }
 
 void free_VM()
@@ -96,6 +113,13 @@ static bool call_value(Value callee, int arg_count)
         switch (OBJ_TYPE(callee)) {
         case OBJ_FUNCTION:
             return call(AS_FUNCTION(callee), arg_count);
+        case OBJ_NATIVE: {
+            NativeFn native = AS_NATIVE(callee);
+            Value result = native(arg_count, vm.stack_top - arg_count);
+            vm.stack_top -= arg_count + 1;
+            push(result);
+            return true;
+        }
         default:
             break;
         }
@@ -252,7 +276,7 @@ static InterpretResult run()
         }
         case OP_SET_LOCAL: {
             uint8_t slot = READ_BYTE();
-            vm.stack[slot] = peek(0);
+            frame->slots[slot] = peek(0);
             break;
         }
         case OP_JUMP_IF_FALSE: {
