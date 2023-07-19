@@ -60,6 +60,32 @@ static bool sqrt_native(int arg_count, Value* args, Value* result)
     return true;
 }
 
+static bool input_native(int arg_count, Value* args, Value* result)
+{
+    Value prompt = args[0];
+    if (!IS_STRING(prompt)) {
+        runtime_error("Input prompt must be a string.");
+        return false;
+    }
+    printf("%s", AS_CSTRING(prompt));
+    char c;
+    size_t length = 0;
+    size_t capacity = 256;
+    char* string = ALLOCATE(char, capacity);
+    while ((c = getchar()) != '\n') {
+        if (length + 1 >= capacity) {
+            size_t old_capacity = capacity;
+            capacity = GROW_CAPACITY(capacity);
+            string = GROW_ARRAY(char, string, old_capacity, capacity);
+        }
+        string[length++] = c;
+    }
+    string[length++] = '\0';
+    ObjString* obj_string = take_string(string, length);
+    *result = OBJ_VAL(obj_string);
+    return true;
+}
+
 static void define_native(const char* name, NativeFn function, int arity)
 {
     push(OBJ_VAL(copy_string(name, (int)strlen(name))));
@@ -99,6 +125,7 @@ void init_VM()
 
     define_native("clock", clock_native, 0);
     define_native("sqrt", sqrt_native, 1);
+    define_native("input", input_native, 1);
 }
 
 void free_VM()
