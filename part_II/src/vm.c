@@ -132,7 +132,7 @@ static InterpretResult run()
 {
     CallFrame* frame = &vm.frames[vm.frame_count - 1];
 #define READ_BYTE() (*frame->ip++)
-#define READ_SHORT() (uint16_t)((READ_BYTE() << 8) | READ_BYTE())
+#define READ_SHORT() (frame->ip += 2, (uint16_t)((frame->ip[-2] << 8) | frame->ip[-1]))
 #define READ_CONSTANT() (frame->function->chunk.constants.values[READ_BYTE()])
 #define BINARY_OP(value_type, op)                                                                  \
     do {                                                                                           \
