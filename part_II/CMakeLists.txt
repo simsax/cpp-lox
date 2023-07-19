@@ -25,3 +25,5 @@ add_executable(
 	"src/table.h"
 	"src/table.c"
 )
+
+target_link_libraries(c-lox PRIVATE m)

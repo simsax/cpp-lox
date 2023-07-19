@@ -2,6 +2,7 @@
 #include <stdarg.h>
 #include <string.h>
 #include <time.h>
+#include <math.h>
 #include "vm.h"
 #include "memory.h"
 #include "common.h"
@@ -11,11 +12,6 @@
 #include "object.h"
 
 VM vm;
-
-static Value clock_native(int arg_count, Value* args)
-{
-    return NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
-}
 
 static void reset_stack()
 {
@@ -44,6 +40,24 @@ static void runtime_error(const char* format, ...)
     }
 
     reset_stack();
+}
+
+static bool clock_native(int arg_count, Value* args, Value* result)
+{
+    *result = NUMBER_VAL((double)clock() / CLOCKS_PER_SEC);
+    return true;
+}
+
+static bool sqrt_native(int arg_count, Value* args, Value* result)
+{
+    Value input = args[0];
+    if (!IS_NUMBER(input)) {
+        runtime_error("Input to sqrt function must be a number.");
+        return false;
+    }
+    double val = AS_NUMBER(input);
+    *result = NUMBER_VAL(sqrt(val));
+    return true;
 }
 
 static void define_native(const char* name, NativeFn function, int arity)
@@ -84,6 +98,7 @@ void init_VM()
     init_table(&vm.globals);
 
     define_native("clock", clock_native, 0);
+    define_native("sqrt", sqrt_native, 1);
 }
 
 void free_VM()
@@ -110,24 +125,28 @@ static bool call(ObjFunction* function, int arg_count)
     return true;
 }
 
+static bool call_native(ObjNative* native, int arg_count)
+{
+    if (arg_count != native->arity) {
+        runtime_error("Expected %d arguments but got %d.", native->arity, arg_count);
+        return false;
+    }
+    NativeFn native_function = native->function;
+    Value result = NIL_VAL;
+    bool success = native_function(arg_count, &vm.stack[vm.stack_top - arg_count], &result);
+    vm.stack_top -= arg_count + 1;
+    push(result);
+    return success;
+}
+
 static bool call_value(Value callee, int arg_count)
 {
     if (IS_OBJ(callee)) {
         switch (OBJ_TYPE(callee)) {
         case OBJ_FUNCTION:
             return call(AS_FUNCTION(callee), arg_count);
-        case OBJ_NATIVE: {
-            ObjNative* native = AS_NATIVE(callee);
-            NativeFn native_function = native->function;
-            if (arg_count != native->arity) {
-                runtime_error("Expected %d arguments but got %d.", native->arity, arg_count);
-                return false;
-            }
-            Value result = native_function(arg_count, &vm.stack[vm.stack_top - arg_count]);
-            vm.stack_top -= arg_count + 1;
-            push(result);
-            return true;
-        }
+        case OBJ_NATIVE:
+            return call_native(AS_NATIVE(callee), arg_count);
         default:
             break;
         }
