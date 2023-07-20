@@ -84,6 +84,9 @@ void print_object(Value value)
     case OBJ_NATIVE:
         printf("<native fn>");
         break;
+    case OBJ_CLOSURE:
+        print_function(AS_CLOSURE(value)->function);
+        break;
     default:
         break;
     }
@@ -93,6 +96,7 @@ ObjFunction* new_function()
 {
     ObjFunction* function = ALLOCATE_OBJ(ObjFunction, OBJ_FUNCTION);
     function->arity = 0;
+    function->upvalue_count = 0;
     function->name = NULL;
     init_chunk(&function->chunk);
     return function;
@@ -103,4 +107,11 @@ ObjNative* new_native(NativeFn function)
     ObjNative* native = ALLOCATE_OBJ(ObjNative, OBJ_NATIVE);
     native->function = function;
     return native;
+}
+
+ObjClosure* new_closure(ObjFunction* function)
+{
+    ObjClosure* closure = ALLOCATE_OBJ(ObjClosure, OBJ_CLOSURE);
+    closure->function = function;
+    return closure;
 }
