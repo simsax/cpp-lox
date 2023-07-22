@@ -17,7 +17,7 @@
 #define AS_NATIVE(value) (((ObjNative*)AS_OBJ(value))->function)
 #define AS_CLOSURE(value) ((ObjClosure*)AS_OBJ(value))
 
-typedef enum { OBJ_STRING, OBJ_FUNCTION, OBJ_NATIVE, OBJ_CLOSURE } ObjType;
+typedef enum { OBJ_STRING, OBJ_FUNCTION, OBJ_NATIVE, OBJ_CLOSURE, OBJ_UPVALUE } ObjType;
 
 struct Obj {
     ObjType type;
@@ -39,9 +39,20 @@ typedef struct {
     ObjString* name;
 } ObjFunction;
 
+struct ObjUpvalue {
+    Obj obj;
+    Value* location;
+    Value closed;
+    struct ObjUpvalue* next;
+};
+
+typedef struct ObjUpvalue ObjUpvalue;
+
 typedef struct {
     Obj obj;
     ObjFunction* function;
+    ObjUpvalue** upvalues;
+    int upvalue_count;
 } ObjClosure;
 
 typedef Value (*NativeFn)(int arg_count, Value* args);
@@ -61,6 +72,7 @@ ObjString* take_string(char* chars, int length);
 ObjFunction* new_function();
 ObjNative* new_native(NativeFn function);
 ObjClosure* new_closure(ObjFunction* function);
+ObjUpvalue* new_upvalue(Value* slot);
 void print_object(Value value);
 
 #endif
