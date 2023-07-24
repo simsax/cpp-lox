@@ -24,8 +24,10 @@ static ObjString* allocate_string(char* chars, int length, uint32_t hash)
     string->chars = chars;
     string->length = length;
     string->hash = hash;
+    push(OBJ_VAL(string));
     // hash set -> we only care about the keys
     table_set(&vm.strings, string, NIL_VAL);
+    pop();
     return string;
 }
 
