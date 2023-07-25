@@ -63,7 +63,7 @@ static bool is_falsey(Value value) { return IS_NIL(value) || (IS_BOOL(value) && 
 static void concatenate()
 {
     ObjString* b = AS_STRING(peek(0));
-    ObjString* a = AS_STRING(peek(0));
+    ObjString* a = AS_STRING(peek(1));
 
     int length = a->length + b->length;
     char* chars = ALLOCATE(char, length + 1);
