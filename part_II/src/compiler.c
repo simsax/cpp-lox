@@ -1,9 +1,10 @@
+#include "compiler.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "common.h"
 #include "object.h"
-#include "compiler.h"
+#include "memory.h"
 #include "scanner.h"
 #include "assert.h"
 #include "chunk.h"
@@ -1040,6 +1041,15 @@ ObjFunction* compile(const char* source)
     }
     ObjFunction* function = end_compiler();
     return parser.had_error ? NULL : function;
+}
+
+void mark_compiler_roots()
+{
+    Compiler* compiler = current;
+    while (compiler != NULL) {
+        mark_object((Obj*)compiler->function);
+        compiler = compiler->enclosing;
+    }
 }
 
 static ParseRule rules[] = {

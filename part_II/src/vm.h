@@ -24,7 +24,12 @@ typedef struct {
     Table strings;
     ObjUpvalue* open_upvalues;
     Table globals;
+    size_t bytes_allocated;
+    size_t next_gc;
     Obj* objects;
+    int gray_count;
+    int gray_capacity;
+    Obj** gray_stack;
 } VM;
 
 typedef enum { INTERPRET_OK, INTERPRET_COMPILE_ERROR, INTERPRET_RUNTIME_ERROR } InterpretResult;
