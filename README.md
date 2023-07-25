@@ -1,6 +1,6 @@
 # cpp-lox
 
-This repository contains my implementation of the Lox programming language, based on the book "Crafting Interpreters".
+This repository contains my implementation of the Lox programming language, based on the book "[Crafting Interpreters](https://craftinginterpreters.com/)".
 
 ## Part I - Tree-Walk Interpreter
 
