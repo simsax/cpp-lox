@@ -311,11 +311,30 @@ static void call(bool can_assign)
     emit_bytes(OP_CALL, arg_count);
 }
 
+// It takes the given token and adds its lexeme to the chunk's constant table as a string.
+// It returns the index of that constant in the constant table.
+static uint8_t identifier_constant(Token* name)
+{
+    return make_constant(OBJ_VAL(copy_string(name->start, name->length)));
+}
+
+static void dot(bool can_assign)
+{
+    consume(TOKEN_IDENTIFIER, "Expect property name after '.'.");
+    uint8_t name = identifier_constant(&parser.previous);
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        emit_bytes(OP_SET_PROPERTY, name);
+    } else {
+        emit_bytes(OP_GET_PROPERTY, name);
+    }
+}
+
 // In jlox, each method for parsing a specific expression also parsed any expressions of higher
 // precedence too, so that included the rest of the precedence table.
 
 // In clox, parsing function don't cascade to include higher precedence expression types
-
 static void parse_precedence(Precedence precedence)
 {
     // starts at the current token and parses any expression at the given precedence level or higher
@@ -338,13 +357,6 @@ static void parse_precedence(Precedence precedence)
     if (can_assign && match(TOKEN_EQUAL)) {
         error("Invalid assignment target.");
     }
-}
-
-// It takes the given token and adds its lexeme to the chunk's constant table as a string.
-// It returns the index of that constant in the constant table.
-static uint8_t identifier_constant(Token* name)
-{
-    return make_constant(OBJ_VAL(copy_string(name->start, name->length)));
 }
 
 static bool identifiers_equal(Token* a, Token* b)
@@ -864,7 +876,7 @@ static ParseRule rules[] = {
     [TOKEN_LEFT_BRACE] = { NULL, NULL, PREC_NONE },
     [TOKEN_RIGHT_BRACE] = { NULL, NULL, PREC_NONE },
     [TOKEN_COMMA] = { NULL, NULL, PREC_NONE },
-    [TOKEN_DOT] = { NULL, NULL, PREC_NONE },
+    [TOKEN_DOT] = { NULL, dot, PREC_CALL },
     [TOKEN_MINUS] = { unary, binary, PREC_TERM },
     [TOKEN_PLUS] = { NULL, binary, PREC_TERM },
     [TOKEN_SEMICOLON] = { NULL, NULL, PREC_NONE },
