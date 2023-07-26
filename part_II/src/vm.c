@@ -127,6 +127,11 @@ static bool call_value(Value callee, int arg_count)
             vm.stack_top -= arg_count + 1;
             push(result);
             return true;
+        case OBJ_CLASS: {
+            ObjClass* klass = AS_CLASS(callee);
+            vm.stack_top[-arg_count - 1] = OBJ_VAL(new_instance(klass));
+            return true;
+        }
         }
         default:
             break;
@@ -376,6 +381,9 @@ static InterpretResult run()
             pop();
             break;
         }
+        case OP_CLASS:
+            push(OBJ_VAL(new_class(READ_STRING())));
+            break;
         default:
             break;
         }
