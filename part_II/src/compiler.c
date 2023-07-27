@@ -694,6 +694,39 @@ static void function(FunctionType type)
     */
 }
 
+static void named_variable(Token name, bool can_assign)
+{
+    uint8_t get_op, set_op;
+    int arg = resolve_local(current, &name);
+    if (arg != -1) {
+        get_op = OP_GET_LOCAL;
+        set_op = OP_SET_LOCAL;
+    } else if ((arg = resolve_upvalue(current, &name)) != -1) {
+        get_op = OP_GET_UPVALUE;
+        set_op = OP_SET_UPVALUE;
+    } else {
+        arg = identifier_constant(&name);
+        get_op = OP_GET_GLOBAL;
+        set_op = OP_SET_GLOBAL;
+    }
+
+    if (can_assign && match(TOKEN_EQUAL)) {
+        expression();
+        emit_bytes(set_op, (uint8_t)arg);
+    } else {
+        emit_bytes(get_op, (uint8_t)arg);
+    }
+}
+
+static void method()
+{
+    consume(TOKEN_IDENTIFIER, "Expect method name.");
+    uint8_t constant = identifier_constant(&parser.previous);
+    FunctionType type = TYPE_FUNCTION;
+    function(type);
+    emit_bytes(OP_METHOD, constant);
+}
+
 static void fun_declaration()
 {
     uint8_t global = parse_variable("Expect function name.");
@@ -705,14 +738,21 @@ static void fun_declaration()
 static void class_declaration()
 {
     consume(TOKEN_IDENTIFIER, "Expect class name.");
+    Token class_name = parser.previous;
     uint8_t name_constant = identifier_constant(&parser.previous);
     declare_variable();
 
     emit_bytes(OP_CLASS, name_constant);
     define_variable(name_constant);
 
+    named_variable(class_name, false); // push class to the stack
+
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
+    while (!check(TOKEN_RIGHT_BRACE) && !check(TOKEN_EOF)) {
+        method();
+    }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
+    emit_byte(OP_POP); // pop class off the stack
 }
 
 static void declaration()
@@ -818,30 +858,6 @@ static void string(bool can_assign)
 {
     // +1 and -2 trim the leading and trailing quotation marks
     emit_constant(OBJ_VAL(copy_string(parser.previous.start + 1, parser.previous.length - 2)));
-}
-
-static void named_variable(Token name, bool can_assign)
-{
-    uint8_t get_op, set_op;
-    int arg = resolve_local(current, &name);
-    if (arg != -1) {
-        get_op = OP_GET_LOCAL;
-        set_op = OP_SET_LOCAL;
-    } else if ((arg = resolve_upvalue(current, &name)) != -1) {
-        get_op = OP_GET_UPVALUE;
-        set_op = OP_SET_UPVALUE;
-    } else {
-        arg = identifier_constant(&name);
-        get_op = OP_GET_GLOBAL;
-        set_op = OP_SET_GLOBAL;
-    }
-
-    if (can_assign && match(TOKEN_EQUAL)) {
-        expression();
-        emit_bytes(set_op, (uint8_t)arg);
-    } else {
-        emit_bytes(get_op, (uint8_t)arg);
-    }
 }
 
 static void variable(bool can_assign) { named_variable(parser.previous, can_assign); }

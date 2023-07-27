@@ -67,6 +67,8 @@ static void free_object(Obj* object)
         break;
     }
     case OBJ_CLASS: {
+        ObjClass* klass = (ObjClass*)object;
+        free_table(&klass->methods);
         FREE(ObjClass, object);
         break;
     }
@@ -76,6 +78,9 @@ static void free_object(Obj* object)
         FREE(ObjInstance, object);
         break;
     }
+    case OBJ_BOUND_METHOD:
+        FREE(ObjBoundMethod, object);
+        break;
     }
 }
 
@@ -145,6 +150,12 @@ static void blacken_object(Obj* object)
     printf("\n");
 #endif
     switch (object->type) {
+    case OBJ_BOUND_METHOD: {
+        ObjBoundMethod* bound = (ObjBoundMethod*)object;
+        mark_object((Obj*)bound->method);
+        mark_value(bound->receiver);
+        break;
+    }
     case OBJ_INSTANCE: {
         ObjInstance* instance = (ObjInstance*)object;
         mark_object((Obj*)instance->klass);
@@ -154,6 +165,7 @@ static void blacken_object(Obj* object)
     case OBJ_CLASS: {
         ObjClass* klass = (ObjClass*)object;
         mark_object((Obj*)klass->name);
+        mark_table(&klass->methods);
         break;
     }
     case OBJ_CLOSURE: {

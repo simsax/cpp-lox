@@ -104,6 +104,9 @@ void print_object(Value value)
     case OBJ_INSTANCE:
         printf("%s instance", AS_INSTANCE(value)->klass->name->chars);
         break;
+    case OBJ_BOUND_METHOD:
+        print_function(AS_BOUND_METHOD(value)->method->function);
+        break;
     default:
         break;
     }
@@ -154,6 +157,7 @@ ObjClass* new_class(ObjString* name)
 {
     ObjClass* klass = ALLOCATE_OBJ(ObjClass, OBJ_CLASS);
     klass->name = name;
+    init_table(&klass->methods);
     return klass;
 }
 
@@ -163,4 +167,12 @@ ObjInstance* new_instance(ObjClass* klass)
     instance->klass = klass;
     init_table(&instance->fields);
     return instance;
+}
+
+ObjBoundMethod* new_bound_method(Value receiver, ObjClosure* method)
+{
+    ObjBoundMethod* bound = ALLOCATE_OBJ(ObjBoundMethod, OBJ_BOUND_METHOD);
+    bound->receiver = receiver;
+    bound->method = method;
+    return bound;
 }
