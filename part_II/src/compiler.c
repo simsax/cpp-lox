@@ -51,9 +51,9 @@ typedef struct {
     bool is_local;
 } Upvalue;
 
-typedef enum { TYPE_FUNCTION, TYPE_SCRIPT } FunctionType;
+typedef enum { TYPE_FUNCTION, TYPE_SCRIPT, TYPE_METHOD, TYPE_INITIALIZER } FunctionType;
 
-struct Compiler {
+typedef struct Compiler {
     struct Compiler* enclosing;
     ObjFunction* function;
     FunctionType type;
@@ -61,12 +61,15 @@ struct Compiler {
     int local_count;
     Upvalue upvalues[UINT8_COUNT];
     int scope_depth;
-};
+} Compiler;
 
-typedef struct Compiler Compiler;
+typedef struct ClassCompiler {
+    struct ClassCompiler* enclosing;
+} ClassCompiler;
 
-static Parser parser;
-static Compiler* current = NULL;
+Parser parser;
+Compiler* current = NULL;
+ClassCompiler* current_class = NULL;
 
 static void expression();
 static void statement();
@@ -159,13 +162,13 @@ static void init_compiler(Compiler* compiler, FunctionType type)
     Local* local = &current->locals[current->local_count++];
     local->depth = 0;
     local->is_captured = false;
-    local->name.start = "";
-    local->name.length = 0;
-    /*
-    `locals` array keeps track of which stack slots are associated with which local variables
-    or temporaries. The compiler implicitly claims slot zero for VM's own internal use.
-    The name is empty so that the user can't write an identifier that refers to it.
-    */
+    if (type != TYPE_FUNCTION) {
+        local->name.start = "this";
+        local->name.length = 4;
+    } else {
+        local->name.start = "";
+        local->name.length = 0;
+    }
 }
 
 static void emit_byte(uint8_t byte) { write_chunk(current_chunk(), byte, parser.previous.line); }
@@ -198,7 +201,11 @@ static int emit_jump(uint8_t instruction)
 
 static void emit_return()
 {
-    emit_byte(OP_NIL);
+    if (current->type == TYPE_INITIALIZER) {
+        emit_bytes(OP_GET_LOCAL, 0);
+    } else {
+        emit_byte(OP_NIL);
+    }
     emit_byte(OP_RETURN);
 }
 
@@ -326,6 +333,10 @@ static void dot(bool can_assign)
     if (can_assign && match(TOKEN_EQUAL)) {
         expression();
         emit_bytes(OP_SET_PROPERTY, name);
+    } else if (match(TOKEN_LEFT_PAREN)) {
+        uint8_t arg_count = argument_list();
+        emit_bytes(OP_INVOKE, name);
+        emit_byte(arg_count);
     } else {
         emit_bytes(OP_GET_PROPERTY, name);
     }
@@ -722,7 +733,10 @@ static void method()
 {
     consume(TOKEN_IDENTIFIER, "Expect method name.");
     uint8_t constant = identifier_constant(&parser.previous);
-    FunctionType type = TYPE_FUNCTION;
+    FunctionType type = TYPE_METHOD;
+    if (parser.previous.length == 4 && memcmp(parser.previous.start, "init", 4) == 0) {
+        type = TYPE_INITIALIZER;
+    }
     function(type);
     emit_bytes(OP_METHOD, constant);
 }
@@ -745,6 +759,10 @@ static void class_declaration()
     emit_bytes(OP_CLASS, name_constant);
     define_variable(name_constant);
 
+    ClassCompiler class_compiler;
+    class_compiler.enclosing = current_class;
+    current_class = &class_compiler;
+
     named_variable(class_name, false); // push class to the stack
 
     consume(TOKEN_LEFT_BRACE, "Expect '{' before class body.");
@@ -753,6 +771,8 @@ static void class_declaration()
     }
     consume(TOKEN_RIGHT_BRACE, "Expect '}' after class body.");
     emit_byte(OP_POP); // pop class off the stack
+
+    current_class = current_class->enclosing;
 }
 
 static void declaration()
@@ -778,6 +798,10 @@ static void return_statement()
     if (match(TOKEN_SEMICOLON)) {
         emit_return();
     } else {
+        if (current->type == TYPE_INITIALIZER) {
+            error("Can't return a value from an initializer.");
+        }
+
         expression();
         consume(TOKEN_SEMICOLON, "Expect ';' after return value.");
         emit_byte(OP_RETURN);
@@ -862,6 +886,15 @@ static void string(bool can_assign)
 
 static void variable(bool can_assign) { named_variable(parser.previous, can_assign); }
 
+static void this_(bool can_assign)
+{
+    if (current_class == NULL) {
+        error("Can't use 'this' outside of a class.");
+        return;
+    }
+    variable(false);
+}
+
 ObjFunction* compile(const char* source)
 {
     init_scanner(source);
@@ -921,7 +954,7 @@ static ParseRule rules[] = {
     [TOKEN_PRINT] = { NULL, NULL, PREC_NONE },
     [TOKEN_RETURN] = { NULL, NULL, PREC_NONE },
     [TOKEN_SUPER] = { NULL, NULL, PREC_NONE },
-    [TOKEN_THIS] = { NULL, NULL, PREC_NONE },
+    [TOKEN_THIS] = { this_, NULL, PREC_NONE },
     [TOKEN_TRUE] = { literal, NULL, PREC_NONE },
     [TOKEN_VAR] = { NULL, NULL, PREC_NONE },
     [TOKEN_WHILE] = { NULL, NULL, PREC_NONE },
