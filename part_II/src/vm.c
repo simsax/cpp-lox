@@ -130,6 +130,7 @@ static bool call_value(Value callee, int arg_count)
             vm.stack_top -= arg_count + 1;
             push(result);
             return true;
+        }
         case OBJ_CLASS: {
             ObjClass* klass = AS_CLASS(callee);
             vm.stack_top[-arg_count - 1] = OBJ_VAL(new_instance(klass));
@@ -146,7 +147,6 @@ static bool call_value(Value callee, int arg_count)
             ObjBoundMethod* bound = AS_BOUND_METHOD(callee);
             vm.stack_top[-arg_count - 1] = bound->receiver;
             return call(bound->method, arg_count);
-        }
         }
         default:
             break;
@@ -487,6 +487,37 @@ static InterpretResult run()
             ObjString* method = READ_STRING();
             int arg_count = READ_BYTE();
             if (!invoke(method, arg_count)) {
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            frame = &vm.frames[vm.frame_count - 1];
+            break;
+        }
+        case OP_INHERIT: {
+            Value superclass = peek(1);
+            if (!IS_CLASS(superclass)) {
+                runtime_error("Superclass must be a class.");
+                return INTERPRET_RUNTIME_ERROR;
+            }
+            ObjClass* subclass = AS_CLASS(peek(0));
+            table_add_all(&AS_CLASS(superclass)->methods, &subclass->methods);
+            pop();
+            break;
+        }
+        case OP_GET_SUPER: {
+            ObjString* name = READ_STRING();
+            ObjClass* superclass = AS_CLASS(pop());
+
+            if (!bind_method(superclass, name)) {
+                return INTERPRET_RUNTIME_ERROR;
+            }
+
+            break;
+        }
+        case OP_SUPER_INVOKE: {
+            ObjString* method = READ_STRING();
+            int arg_count = READ_BYTE();
+            ObjClass* superclass = AS_CLASS(pop());
+            if (!invoke_from_class(superclass, method, arg_count)) {
                 return INTERPRET_RUNTIME_ERROR;
             }
             frame = &vm.frames[vm.frame_count - 1];
